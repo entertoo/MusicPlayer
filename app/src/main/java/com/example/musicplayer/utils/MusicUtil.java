@@ -349,6 +349,7 @@ public class MusicUtil {
 
     /**
      * 根据歌曲的路径,得到对应的lrc
+     *
      * @param path
      * @return
      */
@@ -357,14 +358,10 @@ public class MusicUtil {
         String lrcName = path.replace(".mp3", ".lrc");//找歌曲名称相同的.lrc文件
         file = new File(lrcName);
         if (!file.exists()) {
-            lrcName = path.replace(".mp3", ".trc");//歌词可能是.trc结尾
+            lrcName = path.replace(".mp3", ".txt");//歌词可能是.txt结尾
             file = new File(lrcName);
-            if (!file.exists())  {
-                lrcName = path.replace(".mp3", ".txt");//歌词可能是.txt结尾
-                file = new File(lrcName);
-                if(!file.exists()){
-                    return null;
-                }
+            if (!file.exists()) {
+                return null;
             }
         }
         return file;

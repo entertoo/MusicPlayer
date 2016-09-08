@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MusicPlayer</string>
+
+    <color name="tab_pressed">#33ffffff</color>
+</resources>

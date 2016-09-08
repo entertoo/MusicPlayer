@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="#25272d">
+
+        <ImageView
+            android:id="@+id/back"
+            android:layout_width="40dp"
+            android:layout_height="20dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/ic_drawer_am"/>
+    </LinearLayout>
+
+    <RelativeLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#25272d">
+
+
+        <TextView
+            android:id="@+id/textViewSong"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="30dp"
+            android:text="Rock With You"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"/>
+
+
+        <TextView
+            android:id="@+id/textViewSinger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textViewSong"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="10dp"
+            android:text="Michael Jackson"
+            android:textColor="#80FFFFFF"
+            android:textSize="15sp"/>
+
+        <TextView
+            android:id="@+id/lrc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textViewSinger"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:maxLines="2"
+            android:text="暂无歌词"
+            android:textColor="@color/colorAccent"
+            android:textSize="18sp"/>
+
+        <com.example.musicview.MusicPlayerView
+            android:id="@+id/mpv"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_below="@+id/lrc"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="40dp"
+            app:buttonColor="@color/colorAccent"
+            app:progressLoadedColor="@color/colorAccent"
+            app:textColor="#80FFFFFF"
+            app:textSize="14sp"/>
+
+        <ImageView
+            android:id="@+id/play_mode"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_below="@+id/mpv"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="50dp"
+            android:src="@drawable/player_btn_mode_playall_normal"/>
+
+
+        <ImageView
+            android:id="@+id/next"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignRight="@+id/mpv"
+            android:layout_below="@+id/mpv"
+            android:layout_marginTop="50dp"
+            android:background="@drawable/icon_next"/>
+
+
+        <ImageView
+            android:id="@+id/previous"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignLeft="@+id/mpv"
+            android:layout_below="@+id/mpv"
+            android:layout_marginTop="50dp"
+            android:background="@drawable/icon_previous"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

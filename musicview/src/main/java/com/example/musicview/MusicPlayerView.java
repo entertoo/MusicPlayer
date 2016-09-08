@@ -512,6 +512,11 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
     return isRotating;
   }
 
+  public void setIsRotating(boolean isRotating){
+    this.isRotating = isRotating;
+    postInvalidate();
+  }
+
   /**
    * Start turning image
    */

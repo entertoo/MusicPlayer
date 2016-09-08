@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -27,10 +28,12 @@ import com.example.musicplayer.service.MusicService;
 import com.example.musicplayer.utils.Constants;
 import com.example.musicplayer.utils.LrcUtil;
 import com.example.musicplayer.utils.MusicUtil;
+import com.example.musicplayer.utils.SpTools;
 import com.example.musicplayer.view.SlidingMenu;
 import com.example.musicview.MusicPlayerView;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -39,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ListView mListView;
     private ImageView mNext;
     private ImageView mPrevious;
-    private List<Mp3Info> mMusic_list;
+    private List<Mp3Info> mMusic_list = new ArrayList<>();
     private ImageView mIv_back;
     private SlidingMenu mSlidingMenu;
     private TextView mCurrentLrc;
@@ -47,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mSinger;
     private ImageView mPlayMode;
     private int mPosition;
+    private boolean mIsPlaying;
 
     private RemoteViews remoteViews;
     private NotificationManager mNotificationManager;
@@ -65,13 +69,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 int totalDuration = msg.arg2;
                 mpv.setProgress(currentPosition);
                 mpv.setMax(totalDuration);
-
                 if (mLrcUtil == null) {
                     mLrcUtil = new LrcUtil(MainActivity.this);
                 }
                 // 序列化歌词
                 File file = MusicUtil.getLrcFile(mMusic_list.get(mPosition).getUrl());
-                if(file != null){
+                if (file != null) {
                     mLrcUtil.ReadLRCAndCconvertFile(file);
                     // 使用功能
                     mLrcUtil.RefreshLRC(currentPosition);
@@ -91,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        System.out.println("-------onCreate-------");
         initView();
         initData();
         initEvent();
@@ -124,8 +127,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //消息通知
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mListView.setAdapter(new MusicListAdapter());
+
+        mIsPlaying = SpTools.getBoolean(getApplicationContext(), "music_play_pause", false);
+        mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
         //初始化控件UI
-        refreshPlayUI(mPosition, false);
+        refreshPlayUI(mPosition, mIsPlaying);
     }
 
     /**
@@ -134,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void startMusicService() {
         Intent musicService = new Intent();
         musicService.setClass(getApplicationContext(), MusicService.class);
-        //musicService.putParcelableArrayListExtra("music_list", (ArrayList<? extends Parcelable>) mMusic_list);
+        musicService.putParcelableArrayListExtra("music_list", (ArrayList<? extends Parcelable>) mMusic_list);
         musicService.putExtra("messenger", new Messenger(handler));
         startService(musicService);
     }
@@ -142,35 +148,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * 刷新播放控件的歌名，歌手，图片，按钮的形状
      */
-    private void refreshPlayUI(int position, boolean canRotating) {
-        mMp3Info = mMusic_list.get(position);
-        mSongTitle = mMp3Info.getTitle();
-        mSingerArtist = mMp3Info.getArtist();
-        mBitmap = MusicUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
-        mSong.setText(mSongTitle);
-        mSinger.setText(mSingerArtist);
-        mCurrentLrc.setText("暂无歌词");
-        mpv.setCoverBitmap(mBitmap);
-        // 选中左侧播放中的歌曲颜色
-        changeColorSelected();
-        // 播放控件
-        if (canRotating) {
-            if (!mpv.isRotating()) {
-                mpv.start();
+    private void refreshPlayUI(int position, boolean isPlaying) {
+        if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
+            mMp3Info = mMusic_list.get(position);
+            mSongTitle = mMp3Info.getTitle();
+            mSingerArtist = mMp3Info.getArtist();
+            mBitmap = MusicUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            mSong.setText(mSongTitle);
+            mSinger.setText(mSingerArtist);
+            mCurrentLrc.setText("暂无歌词");
+            mpv.setCoverBitmap(mBitmap);
+            // 选中左侧播放中的歌曲颜色
+            changeColorSelected();
+            // 播放控件
+            mpv.setAutoProgress(false);
+            if (isPlaying) {
+                if(!mpv.isRotating()){
+                    mpv.start();
+                }
+            } else {
+                if(mpv.isRotating()){
+                    mpv.stop();
+                }
             }
+            // 创建并设置通知栏中remoteViews的图片文字
+            remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
+            remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
+            remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
+            if (MusicService.isPlaying) {
+                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
+            } else {
+                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
+            }
+            // 创建并设置通知栏
+            setNotification();
         }
-
-        // 创建并设置通知栏中remoteViews的图片文字
-        remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
-        remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
-        remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
-        if (MusicService.isPlaying) {
-            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
-        } else {
-            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
-        }
-        // 创建并设置通知栏
-        setNotification();
     }
 
     /**
@@ -346,8 +358,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 holder.mTvTitle.setTextColor(getResources().getColor(R.color.colorNormal));
             }
-            System.out.println("mPosition : " + mPosition + ",  position : " + position );
-
             holder.mTvTitle.setTag(position);
 
             return convertView;
@@ -383,9 +393,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
+        System.out.println("------onDestroy------");
         super.onDestroy();
         if (remoteViews != null) {
             mNotificationManager.cancel(100);
         }
+        SpTools.setBoolean(getApplicationContext(), "music_play_pause", MusicService.isPlaying);
+        SpTools.setInt(getApplicationContext(), "music_current_position", mPosition);
     }
+
 }

@@ -6,19 +6,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
-import android.media.AudioManager.OnAudioFocusChangeListener;
 
 import com.example.musicplayer.bean.Mp3Info;
 import com.example.musicplayer.utils.Constants;
-import com.example.musicplayer.utils.MusicUtil;
+import com.example.musicplayer.utils.SpTools;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
@@ -29,10 +30,9 @@ import java.util.TimerTask;
  * @Date 2016-09-06
  * @Des TODO
  */
-public class MusicService extends Service implements MediaPlayer.OnErrorListener,
-        MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener,OnAudioFocusChangeListener{
+public class MusicService extends Service implements MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, OnAudioFocusChangeListener {
 
-    private List<Mp3Info> mMusic_list;
+    private List<Mp3Info> mMusic_list = new ArrayList<>();
     private Messenger mMessenger;
     private MediaPlayer mPlayer;
     private MusicBroadReceiver receiver;
@@ -46,6 +46,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public void onCreate() {
+        System.out.println("service : onCreate");
         if (mPlayer == null) {
             mPlayer = new MediaPlayer();
         }
@@ -53,7 +54,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         mPlayer.setOnErrorListener(this);//资源出错
         mPlayer.setOnPreparedListener(this);//资源准备好的时候
         mPlayer.setOnCompletionListener(this);//播放完成的时候
-        mMusic_list = MusicUtil.getMp3Infos(this);//音乐列表
         regFilter();
 
         //创建audioManger
@@ -66,7 +66,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
+            mMusic_list = intent.getParcelableArrayListExtra("music_list");
             mMessenger = (Messenger) intent.getExtras().get("messenger");
+            mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -95,7 +97,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
-        System.out.println("OnError");
+        System.out.println("service : OnError");
         return true;
     }
 
@@ -105,39 +107,46 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         mPlayer.start();//开始播放
 
         if (mMessenger != null) {
-            Message message = Message.obtain();
-            message.what = Constants.MSG_PREPARED;
-            message.arg1 = mPosition;
-            message.obj = isPlaying;
-            try {
-                //发送位置信息
-                mMessenger.send(message);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-
-            if (mTimer == null) {
-                mTimer = new Timer();
-            }
-            mTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        //1.准备好的时候.告诉activity,当前歌曲的总时长
-                        int currentPosition = mPlayer.getCurrentPosition();
-                        int totalDuration = mPlayer.getDuration();
-                        Message msg = Message.obtain();
-                        msg.what = Constants.MSG_ONPREPARED;
-                        msg.arg1 = currentPosition;
-                        msg.arg2 = totalDuration;
-                        //2.发送消息
-                        mMessenger.send(msg);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, 0, 1000);
+            sentMessageToMain();
+            sentMessageToMainByTimer();
         }
+    }
+
+    private void sentMessageToMain() {
+        Message message = Message.obtain();
+        message.what = Constants.MSG_PREPARED;
+        message.arg1 = mPosition;
+        message.obj = isPlaying;
+        try {
+            //发送位置信息
+            mMessenger.send(message);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sentMessageToMainByTimer() {
+        if (mTimer == null) {
+            mTimer = new Timer();
+        }
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    //1.准备好的时候.告诉activity,当前歌曲的总时长
+                    int currentPosition = mPlayer.getCurrentPosition();
+                    int totalDuration = mPlayer.getDuration();
+                    Message msg = Message.obtain();
+                    msg.what = Constants.MSG_ONPREPARED;
+                    msg.arg1 = currentPosition;
+                    msg.arg2 = totalDuration;
+                    //2.发送消息
+                    mMessenger.send(msg);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 1000);
     }
 
     @Override
@@ -151,7 +160,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
      * 播放
      */
     private void play(int position) {
-        if (mPlayer != null) {
+        if (mPlayer != null && mMusic_list.size() > 0) {
             mPlayer.reset();
             try {
                 mPlayer.setDataSource(mMusic_list.get(position).getUrl());
@@ -260,6 +269,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     Intent intent_pause = new Intent();
                     intent_pause.setAction(Constants.ACTION_PAUSE);
                     sendBroadcast(intent_pause);
+
                     break;
             }
         }
@@ -270,7 +280,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         return mPosition;
     }
 
-    /**---------------音频焦点处理相关的方法---------------**/
+    /**
+     * ---------------音频焦点处理相关的方法---------------
+     **/
     @Override
     public void onAudioFocusChange(int focusChange) {
         switch (focusChange) {

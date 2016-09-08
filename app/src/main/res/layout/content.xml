@@ -23,7 +23,6 @@
         android:layout_height="match_parent"
         android:background="#25272d">
 
-
         <TextView
             android:id="@+id/textViewSong"
             android:layout_width="wrap_content"
@@ -33,7 +32,6 @@
             android:text="Rock With You"
             android:textColor="@android:color/white"
             android:textSize="22sp"/>
-
 
         <TextView
             android:id="@+id/textViewSinger"

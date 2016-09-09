@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MusicPlayer</string>
+    <string name="app_name">真好听</string>
 
     <color name="tab_pressed">#33ffffff</color>
 </resources>

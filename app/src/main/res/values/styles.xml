@@ -8,9 +8,9 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="MyFullScreen" parent="AppTheme">
-        <item name="windowNoTitle">true</item>
+    <style name="TranslucentTheme" parent="AppTheme">
         <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 
     <style name="tab_style">

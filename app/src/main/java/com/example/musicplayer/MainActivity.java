@@ -29,6 +29,7 @@ import com.example.musicplayer.utils.Constants;
 import com.example.musicplayer.utils.LrcUtil;
 import com.example.musicplayer.utils.MusicUtil;
 import com.example.musicplayer.utils.SpTools;
+import com.example.musicplayer.utils.StatusBarUtils;
 import com.example.musicplayer.view.SlidingMenu;
 import com.example.musicview.MusicPlayerView;
 
@@ -67,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (msg.what == Constants.MSG_ONPREPARED) {
                 int currentPosition = msg.arg1;
                 int totalDuration = msg.arg2;
+                mpv.setAutoProgress(false);
                 mpv.setProgress(currentPosition);
                 mpv.setMax(totalDuration);
                 if (mLrcUtil == null) {
@@ -100,9 +102,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initEvent();
     }
 
+    @SuppressLint("InlinedApi")
     private void initView() {
         // 去掉标题
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        StatusBarUtils.enableTranslucentStatusbar(this);
         setContentView(R.layout.activity_main);
         mSlidingMenu = (SlidingMenu) findViewById(R.id.sm);
         // left
@@ -135,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     * 开始音乐服务
+     * 开始音乐服务并传输数据
      */
     private void startMusicService() {
         Intent musicService = new Intent();
@@ -159,15 +163,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mCurrentLrc.setText("暂无歌词");
             mpv.setCoverBitmap(mBitmap);
             // 选中左侧播放中的歌曲颜色
+            changeColorNormalPrv();
             changeColorSelected();
             // 播放控件
             mpv.setAutoProgress(false);
             if (isPlaying) {
-                if(!mpv.isRotating()){
+                if (!mpv.isRotating()) {
                     mpv.start();
                 }
             } else {
-                if(mpv.isRotating()){
+                if (mpv.isRotating()) {
                     mpv.stop();
                 }
             }
@@ -270,7 +275,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
             case R.id.previous://上一首
-                changeColorNormal();
                 sendBroadcast(Constants.ACTION_PRV);
                 break;
             case R.id.play_mode://切换播放模式
@@ -288,7 +292,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
             case R.id.next://下一首
-                changeColorNormal();
                 sendBroadcast(Constants.ACTION_NEXT);
                 break;
         }
@@ -372,6 +375,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void changeColorNormal() {
         TextView tv = (TextView) mListView.findViewWithTag(mPosition);
+        if (tv != null) {
+            tv.setTextColor(getResources().getColor(R.color.colorNormal));
+        }
+    }
+
+    public void changeColorNormalPrv() {
+        TextView tv = (TextView) mListView.findViewWithTag(MusicService.prv_position);
         if (tv != null) {
             tv.setTextColor(getResources().getColor(R.color.colorNormal));
         }

@@ -43,6 +43,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
     private Timer mTimer;
     private Random mRandom = new Random();
+    public static int prv_position;
 
     @Override
     public void onCreate() {
@@ -133,15 +134,17 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             @Override
             public void run() {
                 try {
-                    //1.准备好的时候.告诉activity,当前歌曲的总时长
-                    int currentPosition = mPlayer.getCurrentPosition();
-                    int totalDuration = mPlayer.getDuration();
-                    Message msg = Message.obtain();
-                    msg.what = Constants.MSG_ONPREPARED;
-                    msg.arg1 = currentPosition;
-                    msg.arg2 = totalDuration;
-                    //2.发送消息
-                    mMessenger.send(msg);
+                    if (isPlaying){
+                        //1.准备好的时候.告诉activity,当前歌曲的总时长
+                        int currentPosition = mPlayer.getCurrentPosition();
+                        int totalDuration = mPlayer.getDuration();
+                        Message msg = Message.obtain();
+                        msg.what = Constants.MSG_ONPREPARED;
+                        msg.arg1 = currentPosition;
+                        msg.arg2 = totalDuration;
+                        //2.发送消息
+                        mMessenger.send(msg);
+                    }
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
@@ -232,6 +235,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     break;
                 case Constants.ACTION_NEXT:
                     //下一首
+                    prv_position = mPosition;
                     isPlaying = true;
                     if (playMode % 3 == 1) {//1.单曲循环
                         play(mPosition);
@@ -249,6 +253,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     break;
                 case Constants.ACTION_PRV:
                     //上一首
+                    prv_position = mPosition;
                     isPlaying = true;
                     if (playMode % 3 == 1) {//1.单曲循环
                         play(mPosition);

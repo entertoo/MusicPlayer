@@ -504,17 +504,12 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
         return isRotating;
     }
 
-    public void setIsRotating(boolean isRotating) {
-        this.isRotating = isRotating;
-        postInvalidate();
-    }
-
     /**
      * Start turning image
      */
     public void start() {
-
         isRotating = true;
+        mPlayPauseDrawable.setIsPlaying(isRotating);
         mPlayPauseDrawable.setPlaying(isRotating);
         mHandlerRotate.removeCallbacksAndMessages(null);
         mHandlerRotate.postDelayed(mRunnableRotate, ROTATE_DELAY);
@@ -530,6 +525,7 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      */
     public void stop() {
         isRotating = false;
+        mPlayPauseDrawable.setIsPlaying(isRotating);
         mPlayPauseDrawable.setPlaying(isRotating);
         postInvalidate();
     }
@@ -808,10 +804,10 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      * Animate play/pause image
      */
     public void toggle() {
+
         if (mAnimatorSet != null) {
             mAnimatorSet.cancel();
         }
-
         mAnimatorSet = new AnimatorSet();
         final Animator pausePlayAnim = mPlayPauseDrawable.getPausePlayAnimator();
         mAnimatorSet.setInterpolator(new DecelerateInterpolator());

@@ -38,7 +38,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private MusicBroadReceiver receiver;
     private int mCurrentPosition;
     private boolean isFirst = true;
-    public static boolean isPlaying;
+    private  boolean isPlaying;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
     private Timer mTimer;
@@ -99,6 +99,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
         System.out.println("service : OnError");
+        Intent intent = new Intent();
+        intent.setAction(Constants.ACTION_NEXT);
+        sendBroadcast(intent);
         return true;
     }
 
@@ -117,7 +120,20 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         Message message = Message.obtain();
         message.what = Constants.MSG_PREPARED;
         message.arg1 = mPosition;
-        message.obj = isPlaying;
+        message.obj = mPlayer.isPlaying();
+        try {
+            //发送位置信息
+            mMessenger.send(message);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sentPlayToMain() {
+        Message message = Message.obtain();
+        message.what = Constants.MSG_PLAY;
+        message.arg1 = mPosition;
+        message.obj = mPlayer.isPlaying();
         try {
             //发送位置信息
             mMessenger.send(message);
@@ -134,7 +150,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             @Override
             public void run() {
                 try {
-                    if (isPlaying){
+                    if (mPlayer.isPlaying()) {
                         //1.准备好的时候.告诉activity,当前歌曲的总时长
                         int currentPosition = mPlayer.getCurrentPosition();
                         int totalDuration = mPlayer.getDuration();
@@ -181,6 +197,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         if (mPlayer != null && mPlayer.isPlaying()) {
             mCurrentPosition = mPlayer.getCurrentPosition();
             mPlayer.pause();
+            sentPlayToMain();
         }
     }
 
@@ -231,6 +248,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                         mPlayer.seekTo(mCurrentPosition);
                         mPlayer.start();
                         //通知是否在播放
+                        sentPlayToMain();
                     }
                     break;
                 case Constants.ACTION_NEXT:

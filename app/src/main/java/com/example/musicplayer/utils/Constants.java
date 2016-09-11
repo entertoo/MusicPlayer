@@ -24,4 +24,5 @@ public class Constants {
     public static final String ACTION_COMPLETION = "com.example.musicplayer.completion";
     public static final int MSG_ONPREPARED = 001;
     public static final int MSG_PREPARED = 002;
+    public static final int MSG_PLAY = 003;
 }

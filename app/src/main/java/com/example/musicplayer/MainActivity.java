@@ -68,9 +68,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (msg.what == Constants.MSG_ONPREPARED) {
                 int currentPosition = msg.arg1;
                 int totalDuration = msg.arg2;
+                //System.out.println("currentPosition: " + currentPosition);
                 mpv.setAutoProgress(false);
                 mpv.setProgress(currentPosition);
                 mpv.setMax(totalDuration);
+                if (!mpv.isRotating()) {
+                    mpv.start();
+                    System.out.println("handler--mpv.start(): " + mpv.isRotating());
+                }
+                //mpv.start();
                 if (mLrcUtil == null) {
                     mLrcUtil = new LrcUtil(MainActivity.this);
                 }
@@ -88,7 +94,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             if (msg.what == Constants.MSG_PREPARED) {
                 mPosition = msg.arg1;
-                refreshPlayUI(mPosition, true);
+                mIsPlaying = (boolean) msg.obj;
+                refreshMusicUI(mPosition, mIsPlaying);
+            }
+            if (msg.what == Constants.MSG_PLAY) {
+                mPosition = msg.arg1;
+                mIsPlaying = (boolean) msg.obj;
+                refreshPlayUI(mPosition, mIsPlaying);
             }
         }
     };
@@ -135,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mIsPlaying = SpTools.getBoolean(getApplicationContext(), "music_play_pause", false);
         mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
         //初始化控件UI
-        refreshPlayUI(mPosition, mIsPlaying);
+        refreshMusicUI(mPosition, mIsPlaying);
     }
 
     /**
@@ -152,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * 刷新播放控件的歌名，歌手，图片，按钮的形状
      */
-    private void refreshPlayUI(int position, boolean isPlaying) {
+    private void refreshMusicUI(int position, boolean isPlaying) {
         if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
             mMp3Info = mMusic_list.get(position);
             mSongTitle = mMp3Info.getTitle();
@@ -171,6 +183,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!mpv.isRotating()) {
                     mpv.start();
                 }
+                System.out.println("mvp.start()---mpv.isRotating(): " + mpv.isRotating());
             } else {
                 if (mpv.isRotating()) {
                     mpv.stop();
@@ -180,10 +193,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
             remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
-            if (MusicService.isPlaying) {
-                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
+
+            // 创建并设置通知栏
+            setNotification();
+        }
+    }
+
+    /**
+     * 刷新播放控件的歌名，歌手，图片，按钮的形状
+     */
+    private void refreshPlayUI(int position, boolean isPlaying) {
+        if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
+            // content播放控件
+            mpv.setAutoProgress(false);
+            if (isPlaying) {
+                if (!mpv.isRotating()) {
+                    mpv.start();
+                    System.out.println("start");
+                }
             } else {
-                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
+                if (mpv.isRotating()) {
+                    mpv.stop();
+                    System.out.println("stop");
+                }
             }
             // 创建并设置通知栏
             setNotification();
@@ -195,15 +227,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     @SuppressLint("NewApi")
     private void setNotification() {
+        // 创建并设置通知栏中remoteViews的图片文字
+        if (mIsPlaying) {
+            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
+        } else {
+            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
+        }
+
         mBuilder = new NotificationCompat.Builder(this);
         // 点击跳转到主界面
         Intent intent_main = new Intent(this, MainActivity.class);
+        //TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);  //得到返回栈
+        //stackBuilder.addParentStack(MainActivity.class);  //向返回栈中压入activity，这里注意不是压入的父activity，而是点击通知启动的activity
+        //stackBuilder.addNextIntent(intent_main);
         PendingIntent pending_intent_go = PendingIntent.getActivity(this, 1, intent_main, PendingIntent.FLAG_UPDATE_CURRENT);
-        //remoteViews.setOnClickPendingIntent(R.id.notice, pending_intent_go);
+        remoteViews.setOnClickPendingIntent(R.id.notice, pending_intent_go);
 
         // 4个参数context, requestCode, intent, flags
-        PendingIntent pending_intent_close = PendingIntent.getActivity(this, 2, intent_main, PendingIntent.FLAG_UPDATE_CURRENT);
-        //remoteViews.setOnClickPendingIntent(R.id.widget_close, pending_intent_close);
+        Intent intent_canel = new Intent();
+        PendingIntent pending_intent_close = PendingIntent.getActivity(this, 2, intent_canel, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.widget_close, pending_intent_close);
 
         // 设置上一曲
         Intent intent_prv = new Intent();
@@ -212,18 +255,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         remoteViews.setOnClickPendingIntent(R.id.widget_prev, pending_intent_prev);
 
         // 设置播放
-        if (MusicService.isPlaying) {//如果正在播放——》暂停
+        if (mIsPlaying) {//如果正在播放——》暂停
             Intent intent_playorpause = new Intent();
             intent_playorpause.setAction(Constants.ACTION_PAUSE);
             PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 4, intent_playorpause, PendingIntent.FLAG_UPDATE_CURRENT);
-            //remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
+            remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
-        if (!MusicService.isPlaying) {//如果暂停——》播放
+        if (!mIsPlaying) {//如果暂停——》播放
             Intent intent_playorpause = new Intent();
             intent_playorpause.setAction(Constants.ACTION_PLAY);
             PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_playorpause, PendingIntent.FLAG_UPDATE_CURRENT);
-            //remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
+            remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
+        System.out.println("setNotification--mIsPlaying: " + mIsPlaying);
 
         // 下一曲
         Intent intent_next = new Intent();
@@ -266,11 +310,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mSlidingMenu.toggle();
                 break;
             case R.id.mpv://自定义播放控件，点击播放或暂停
-                if (mpv.isRotating()) {
-                    mpv.stop();
+                if (mIsPlaying) {
                     sendBroadcast(Constants.ACTION_PAUSE);
                 } else {
-                    mpv.start();
                     sendBroadcast(Constants.ACTION_PLAY);
                 }
                 break;
@@ -406,9 +448,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         System.out.println("------onDestroy------");
         super.onDestroy();
         if (remoteViews != null) {
-            mNotificationManager.cancel(100);
+            //mNotificationManager.cancel(100);
         }
-        SpTools.setBoolean(getApplicationContext(), "music_play_pause", MusicService.isPlaying);
+
+        SpTools.setBoolean(getApplicationContext(), "music_play_pause", mIsPlaying);
         SpTools.setInt(getApplicationContext(), "music_current_position", mPosition);
     }
 

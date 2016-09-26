@@ -20,6 +20,8 @@ public class Constants {
     public static final String ACTION_PRV = "com.example.musicplayer.prv";
     //seekbar手动控制
     public static final String ACTION_SEEK ="com.example.musicplayer.seek";
+    // 取消
+    public static final int ACTION_CANCEL = 004;
     //以上操作结束的时候
     public static final String ACTION_COMPLETION = "com.example.musicplayer.completion";
     public static final int MSG_ONPREPARED = 001;

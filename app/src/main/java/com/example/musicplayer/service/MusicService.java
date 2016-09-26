@@ -83,6 +83,13 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public void onDestroy() {
+        mMessage = Message.obtain();
+        mMessage.what = Constants.ACTION_CANCEL;
+        try {
+            mMessenger.send(mMessage);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         if (mPlayer != null) {
             mPlayer.release();
             mPlayer = null;

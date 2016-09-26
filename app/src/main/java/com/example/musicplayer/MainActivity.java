@@ -95,6 +95,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mIsPlaying = (boolean) msg.obj;
                 refreshPlayUI(mIsPlaying);
             }
+            if (msg.what == Constants.ACTION_CANCEL) {
+                if (remoteViews != null) {
+                    mNotificationManager.cancel(100);
+                }
+            }
         }
     };
     private File mFile;

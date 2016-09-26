@@ -44,6 +44,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private Timer mTimer;
     private Random mRandom = new Random();
     public static int prv_position;
+    private Message mMessage;
 
     @Override
     public void onCreate() {
@@ -111,38 +112,37 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         mPlayer.start();//开始播放
 
         if (mMessenger != null) {
-            sentMessageToMain();
-            sentMessageToMainByTimer();
+            sentPreparedMessageToMain();
+            sentPositionToMainByTimer();
         }
     }
 
-    private void sentMessageToMain() {
-        Message message = Message.obtain();
-        message.what = Constants.MSG_PREPARED;
-        message.arg1 = mPosition;
-        message.obj = mPlayer.isPlaying();
+    private void sentPreparedMessageToMain() {
+        mMessage = Message.obtain();
+        mMessage.what = Constants.MSG_PREPARED;
+        mMessage.arg1 = mPosition;
+        mMessage.obj = mPlayer.isPlaying();
         try {
             //发送位置信息
-            mMessenger.send(message);
+            mMessenger.send(mMessage);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
 
-    private void sentPlayToMain() {
-        Message message = Message.obtain();
-        message.what = Constants.MSG_PLAY;
-        message.arg1 = mPosition;
-        message.obj = mPlayer.isPlaying();
+    private void sentPlayStateToMain() {
+        mMessage = Message.obtain();
+        mMessage.what = Constants.MSG_PLAY;
+        mMessage.obj = mPlayer.isPlaying();
         try {
             //发送位置信息
-            mMessenger.send(message);
+            mMessenger.send(mMessage);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
 
-    private void sentMessageToMainByTimer() {
+    private void sentPositionToMainByTimer() {
         if (mTimer == null) {
             mTimer = new Timer();
         }
@@ -154,12 +154,12 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                         //1.准备好的时候.告诉activity,当前歌曲的总时长
                         int currentPosition = mPlayer.getCurrentPosition();
                         int totalDuration = mPlayer.getDuration();
-                        Message msg = Message.obtain();
-                        msg.what = Constants.MSG_ONPREPARED;
-                        msg.arg1 = currentPosition;
-                        msg.arg2 = totalDuration;
+                        mMessage = Message.obtain();
+                        mMessage.what = Constants.MSG_ONPREPARED;
+                        mMessage.arg1 = currentPosition;
+                        mMessage.arg2 = totalDuration;
                         //2.发送消息
-                        mMessenger.send(msg);
+                        mMessenger.send(mMessage);
                     }
                 } catch (RemoteException e) {
                     e.printStackTrace();
@@ -197,7 +197,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         if (mPlayer != null && mPlayer.isPlaying()) {
             mCurrentPosition = mPlayer.getCurrentPosition();
             mPlayer.pause();
-            sentPlayToMain();
+            sentPlayStateToMain();
         }
     }
 
@@ -248,7 +248,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                         mPlayer.seekTo(mCurrentPosition);
                         mPlayer.start();
                         //通知是否在播放
-                        sentPlayToMain();
+                        sentPlayStateToMain();
                     }
                     break;
                 case Constants.ACTION_NEXT:

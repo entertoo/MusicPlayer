@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int mPosition;
     private boolean mIsPlaying;
 
+    private Notification mNotification;
     private RemoteViews remoteViews;
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mBuilder;
@@ -68,22 +69,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (msg.what == Constants.MSG_ONPREPARED) {
                 int currentPosition = msg.arg1;
                 int totalDuration = msg.arg2;
-                //System.out.println("currentPosition: " + currentPosition);
-                mpv.setAutoProgress(false);
                 mpv.setProgress(currentPosition);
                 mpv.setMax(totalDuration);
-                if (!mpv.isRotating()) {
-                    mpv.start();
-                    System.out.println("handler--mpv.start(): " + mpv.isRotating());
-                }
-                //mpv.start();
                 if (mLrcUtil == null) {
                     mLrcUtil = new LrcUtil(MainActivity.this);
                 }
                 // 序列化歌词
-                File file = MusicUtil.getLrcFile(mMusic_list.get(mPosition).getUrl());
-                if (file != null) {
-                    mLrcUtil.ReadLRCAndCconvertFile(file);
+                mFile = MusicUtil.getLrcFile(mMusic_list.get(mPosition).getUrl());
+                if (mFile != null) {
+                    mLrcUtil.ReadLRCAndCconvertFile(mFile);
                     // 使用功能
                     mLrcUtil.RefreshLRC(currentPosition);
                     // 1. 设置集合
@@ -98,17 +92,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 refreshMusicUI(mPosition, mIsPlaying);
             }
             if (msg.what == Constants.MSG_PLAY) {
-                mPosition = msg.arg1;
                 mIsPlaying = (boolean) msg.obj;
-                refreshPlayUI(mPosition, mIsPlaying);
+                refreshPlayUI(mIsPlaying);
             }
         }
     };
+    private File mFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        System.out.println("-------onCreate-------");
         initView();
         initData();
         initEvent();
@@ -132,7 +125,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mPrevious = (ImageView) findViewById(R.id.previous);//上一首
         mPlayMode = (ImageView) findViewById(R.id.play_mode);//播放模式
         mNext = (ImageView) findViewById(R.id.next);//下一首
-        remoteViews = new RemoteViews(getPackageName(), R.layout.customnotice);
+        remoteViews = new RemoteViews(getPackageName(), R.layout.customnotice);//通知栏布局
+        creatNotification();//创建通知栏
     }
 
     private void initData() {
@@ -166,10 +160,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void refreshMusicUI(int position, boolean isPlaying) {
         if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
+            // 1.获取播放数据
             mMp3Info = mMusic_list.get(position);
             mSongTitle = mMp3Info.getTitle();
             mSingerArtist = mMp3Info.getArtist();
             mBitmap = MusicUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            // 2.更新播放控件UI
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
             mCurrentLrc.setText("暂无歌词");
@@ -177,63 +173,82 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
-            // 播放控件
-            mpv.setAutoProgress(false);
-            if (isPlaying) {
-                if (!mpv.isRotating()) {
-                    mpv.start();
-                }
-                System.out.println("mvp.start()---mpv.isRotating(): " + mpv.isRotating());
-            } else {
-                if (mpv.isRotating()) {
-                    mpv.stop();
-                }
-            }
-            // 创建并设置通知栏中remoteViews的图片文字
+            // 更新播放控件
+            updateMpv(isPlaying);
+            // 3.更新通知栏UI
             remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
             remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
-
-            // 创建并设置通知栏
-            setNotification();
-        }
-    }
-
-    /**
-     * 刷新播放控件的歌名，歌手，图片，按钮的形状
-     */
-    private void refreshPlayUI(int position, boolean isPlaying) {
-        if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
-            // content播放控件
-            mpv.setAutoProgress(false);
-            if (isPlaying) {
-                if (!mpv.isRotating()) {
-                    mpv.start();
-                    System.out.println("start");
-                }
+            // 创建并设置通知栏中remoteViews的播放与暂停UI
+            if (mIsPlaying) {
+                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
             } else {
-                if (mpv.isRotating()) {
-                    mpv.stop();
-                    System.out.println("stop");
-                }
+                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
             }
-            // 创建并设置通知栏
-            setNotification();
+            // 显示设置通知栏
+            mNotificationManager.notify(100, mNotification);
         }
     }
 
     /**
-     * 设置通知
+     * 刷新播放控件及通知
      */
-    @SuppressLint("NewApi")
-    private void setNotification() {
-        // 创建并设置通知栏中remoteViews的图片文字
+    private void refreshPlayUI(boolean isPlaying) {
+        updateMpv(isPlaying);
+
+        updateNotification();
+    }
+
+    /**
+     * 更新播放控件
+     * @param isPlaying
+     */
+    private void updateMpv(boolean isPlaying) {
+        mpv.setAutoProgress(false);
+        // content播放控件
+        if (isPlaying) {
+            if (!mpv.isRotating()) {
+                mpv.start();
+            }
+        } else {
+            if (mpv.isRotating()) {
+                mpv.stop();
+            }
+        }
+    }
+
+    /**
+     * 更新通知栏UI
+     */
+    private void updateNotification() {
+        Intent intent_play_pause;
+        // 创建并设置通知栏
         if (mIsPlaying) {
             remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
         } else {
             remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
         }
+        // 设置播放
+        if (mIsPlaying) {//如果正在播放——》暂停
+            intent_play_pause = new Intent();
+            intent_play_pause.setAction(Constants.ACTION_PAUSE);
+            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 4, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
+            remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
+        }
+        if (!mIsPlaying) {//如果暂停——》播放
+            intent_play_pause = new Intent();
+            intent_play_pause.setAction(Constants.ACTION_PLAY);
+            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
+            remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
+        }
+        mNotificationManager.notify(100, mNotification);
+    }
 
+    /**
+     * 创建通知栏
+     */
+    @SuppressLint("NewApi")
+    private void creatNotification() {
         mBuilder = new NotificationCompat.Builder(this);
         // 点击跳转到主界面
         Intent intent_main = new Intent(this, MainActivity.class);
@@ -254,20 +269,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         PendingIntent pending_intent_prev = PendingIntent.getBroadcast(this, 3, intent_prv, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.widget_prev, pending_intent_prev);
 
-        // 设置播放
+        // 设置播放暂停
+        Intent intent_play_pause;
         if (mIsPlaying) {//如果正在播放——》暂停
-            Intent intent_playorpause = new Intent();
-            intent_playorpause.setAction(Constants.ACTION_PAUSE);
-            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 4, intent_playorpause, PendingIntent.FLAG_UPDATE_CURRENT);
+            intent_play_pause = new Intent();
+            intent_play_pause.setAction(Constants.ACTION_PAUSE);
+            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 4, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
             remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
         if (!mIsPlaying) {//如果暂停——》播放
-            Intent intent_playorpause = new Intent();
-            intent_playorpause.setAction(Constants.ACTION_PLAY);
-            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_playorpause, PendingIntent.FLAG_UPDATE_CURRENT);
+            intent_play_pause = new Intent();
+            intent_play_pause.setAction(Constants.ACTION_PLAY);
+            PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
             remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
-        System.out.println("setNotification--mIsPlaying: " + mIsPlaying);
 
         // 下一曲
         Intent intent_next = new Intent();
@@ -277,13 +292,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //mBuilder.setSmallIcon(R.drawable.notification_bar_icon); // 设置顶部图标（状态栏）
 
-        Notification notification = mBuilder.build();
-        notification.contentView = remoteViews; // 设置下拉图标
-        notification.bigContentView = remoteViews; // 防止显示不完全,需要添加apisupport
-        notification.flags = Notification.FLAG_ONGOING_EVENT;
-        notification.icon = R.drawable.notification_bar_icon;
-
-        mNotificationManager.notify(100, notification);
+        mNotification = mBuilder.build();
+        mNotification.contentView = remoteViews; // 设置下拉图标
+        mNotification.bigContentView = remoteViews; // 防止显示不完全,需要添加apisupport
+        mNotification.flags = Notification.FLAG_ONGOING_EVENT;
+        mNotification.icon = R.drawable.notification_bar_icon;
     }
 
     private void initEvent() {
@@ -445,12 +458,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
-        System.out.println("------onDestroy------");
         super.onDestroy();
         if (remoteViews != null) {
             //mNotificationManager.cancel(100);
         }
-
         SpTools.setBoolean(getApplicationContext(), "music_play_pause", mIsPlaying);
         SpTools.setInt(getApplicationContext(), "music_current_position", mPosition);
     }

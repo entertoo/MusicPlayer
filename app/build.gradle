@@ -27,6 +27,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:25.3.1'
-    compile project(':musicview')
+    compile 'com.android.support:palette-v7:25.3.1'
     compile 'com.squareup.okhttp3:okhttp:3.8.1'
+    compile project(':musicview')
 }

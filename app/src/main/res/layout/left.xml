@@ -4,7 +4,6 @@
     android:id="@+id/listview"
     android:layout_width="210dp"
     android:layout_height="match_parent"
-    android:background="@drawable/menu_bg"
     android:cacheColorHint="@android:color/transparent"
     android:fastScrollEnabled="true"
     android:fitsSystemWindows="true">

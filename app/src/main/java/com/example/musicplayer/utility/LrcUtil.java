@@ -1,4 +1,4 @@
-package com.example.musicplayer.utils;
+package com.example.musicplayer.utility;
 
 import com.example.musicplayer.MainActivity;
 

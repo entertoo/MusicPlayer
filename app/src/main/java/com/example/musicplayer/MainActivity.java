@@ -25,11 +25,11 @@ import android.widget.TextView;
 
 import com.example.musicplayer.bean.Mp3Info;
 import com.example.musicplayer.service.MusicService;
-import com.example.musicplayer.utils.Constants;
-import com.example.musicplayer.utils.LrcUtil;
-import com.example.musicplayer.utils.MusicUtil;
-import com.example.musicplayer.utils.SpTools;
-import com.example.musicplayer.utils.StatusBarUtils;
+import com.example.musicplayer.utility.Constants;
+import com.example.musicplayer.utility.LrcUtil;
+import com.example.musicplayer.utility.MusicUtil;
+import com.example.musicplayer.utility.SpTools;
+import com.example.musicplayer.utility.StatusBarUtils;
 import com.example.musicplayer.view.SlidingMenu;
 import com.example.musicview.MusicPlayerView;
 

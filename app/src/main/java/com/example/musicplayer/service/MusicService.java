@@ -15,8 +15,8 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 
 import com.example.musicplayer.bean.Mp3Info;
-import com.example.musicplayer.utils.Constants;
-import com.example.musicplayer.utils.SpTools;
+import com.example.musicplayer.utility.Constants;
+import com.example.musicplayer.utility.SpTools;
 
 import java.io.IOException;
 import java.util.ArrayList;

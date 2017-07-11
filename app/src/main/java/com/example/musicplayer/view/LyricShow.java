@@ -9,7 +9,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.example.musicplayer.utils.LrcUtil.Timelrc;
+import com.example.musicplayer.utility.LrcUtil.Timelrc;
 
 import java.util.Vector;
 

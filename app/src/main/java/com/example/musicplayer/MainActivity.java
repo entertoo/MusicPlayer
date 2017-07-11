@@ -21,6 +21,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private static final String TAG = "MainActivity";
     private MusicPlayerView mpv;
-    private ListView mListView;
+    private ListView mLeftView;
     private ImageView mNext;
     private ImageView mPrevious;
     private List<Mp3Info> mMusicList = new ArrayList<>();
@@ -65,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String mSongTitle;
     private String mSingerArtist;
     private Bitmap mBitmap;
-    private LrcUtil mLrcUtil;// 歌词工具
     private File mFile;
 
     private Handler handler = new Handler() {
@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
+    private RelativeLayout mainView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,9 +110,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         StatusBarUtil.enableTranslucentStatusbar(this);
         setContentView(R.layout.activity_main);
+        mainView = (RelativeLayout) findViewById(R.id.main_bg);
         mSlidingMenu = (SlidingMenu) findViewById(R.id.sm);
         // left
-        mListView = (ListView) findViewById(R.id.listview);
+        mLeftView = (ListView) findViewById(R.id.listview);
         // content
         mIv_back = (ImageView) findViewById(R.id.back);//切换左右控件
         mSong = (TextView) findViewById(R.id.textViewSong);//歌名
@@ -132,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startMusicService();
         //消息通知
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mListView.setAdapter(new MusicListAdapter());
+        mLeftView.setAdapter(new MusicListAdapter());
 
         mIsPlaying = SpTools.getBoolean(getApplicationContext(), "music_play_pause", false);
         mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
@@ -319,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mPrevious.setOnClickListener(this);
         mPlayMode.setOnClickListener(this);
         mNext.setOnClickListener(this);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mLeftView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 //点击左侧菜单
@@ -443,21 +445,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void changeColorNormal() {
-        TextView tv = (TextView) mListView.findViewWithTag(mPosition);
+        TextView tv = (TextView) mLeftView.findViewWithTag(mPosition);
         if (tv != null) {
             tv.setTextColor(getResources().getColor(R.color.colorNormal));
         }
     }
 
     public void changeColorNormalPrv() {
-        TextView tv = (TextView) mListView.findViewWithTag(MusicService.prv_position);
+        TextView tv = (TextView) mLeftView.findViewWithTag(MusicService.prv_position);
         if (tv != null) {
             tv.setTextColor(getResources().getColor(R.color.colorNormal));
         }
     }
 
     public void changeColorSelected() {
-        TextView tv = (TextView) mListView.findViewWithTag(mPosition);
+        TextView tv = (TextView) mLeftView.findViewWithTag(mPosition);
         if (tv != null) {
             tv.setTextColor(getResources().getColor(R.color.colorAccent));
         }

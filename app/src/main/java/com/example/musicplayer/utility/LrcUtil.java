@@ -1,6 +1,15 @@
 package com.example.musicplayer.utility;
 
+import android.content.Context;
+import android.util.Log;
+
 import com.example.musicplayer.MainActivity;
+import com.example.musicplayer.bean.Mp3Info;
+import com.example.musicplayer.functions.Subscriber;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -13,12 +22,21 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
+import static com.example.musicplayer.utility.Constants.URL_GET_MUSIC_ID;
+import static com.example.musicplayer.utility.Constants.URl_GET_MUSIC_LRC;
+
 /**
  * 专门用来解析歌词，.lrc;.txt;
  */
 public class LrcUtil {
     private static final String TAG = "LRCUtils";
-    MainActivity activity;
+    private MainActivity activity;
     public static Vector<Timelrc> lrclist; //ArrayList
     private boolean IsLyricExist = false;
     private int lastLine = 0;
@@ -28,19 +46,15 @@ public class LrcUtil {
     }
 
     public Vector<Timelrc> getLrcList() {
-
         return lrclist;
     }
 
     public void setNullLrcList() {
-
         lrclist = null;
     }
 
     /**
      * 序列号的入口
-     *
-     * @param f
      */
     public void ReadLRC(File f) {
         try {
@@ -79,7 +93,7 @@ public class LrcUtil {
 
     }
 
-    public void ReadLRCAndCconvertFile(File file) {
+    public void ReadLRCAndConvertFile(File file) {
         if (file == null || !file.exists()) {
             IsLyricExist = false;
             lrclist = null;
@@ -158,9 +172,6 @@ public class LrcUtil {
 
     /**
      * 具体解析歌词
-     *
-     * @param LRCText
-     * @return
      */
     private String AnalyzeLRC(String LRCText) {
         try {
@@ -233,9 +244,6 @@ public class LrcUtil {
 
     /**
      * 获取文件的编码格式
-     *
-     * @param file
-     * @return
      */
     public String GetCharset(File file) {
         String charset = "GBK";
@@ -374,9 +382,130 @@ public class LrcUtil {
                     if (i == 1 || current >= lrclist.get(i - 1).getTimePoint()) {
                         lastLine = i - 1;
                         String lrcString = lrclist.get(i - 1).getLrcString();
-                        activity.setMiniLrc(lrcString);//调用activity里面的方法
+                        //activity.setMiniLrc(lrcString);//调用activity里面的方法
                     }
             }
         }
+    }
+
+    /**
+     * 请求音乐id
+     */
+    public static void getMusicId(final String name, final String singer, final Subscriber<Mp3Info> subscriber) {
+        ThreadPoolUtil.getInstance().execute(new Runnable() {
+            @Override
+            public void run() {
+                OkHttpClient okHttpClient = ClientUtil.getOkHttpClient();
+                Request request = new Request.Builder().get().url(URL_GET_MUSIC_ID + name).build();
+                okHttpClient.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        subscriber.onError(e);
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        String s = response.body().string();
+                        Log.i(TAG, "getMusicId-onResponse: " + s);
+                        JSONObject jsonObject = string2Json(s);
+                        Mp3Info mp3Info = new Mp3Info();
+                        try {
+                            JSONObject result = jsonObject.getJSONObject("result");
+                            JSONArray songs = result.getJSONArray("songs");
+                            for (int i = 0; i < songs.length(); i++) {
+                                JSONObject song = (JSONObject) songs.get(i);
+                                JSONArray artists = song.getJSONArray("artists");
+                                JSONObject artist = (JSONObject) artists.get(0);
+                                String singerName = artist.getString("name");
+                                if (songs.length() == 1 || singer.contains(singerName) || singerName.contains(singer) || i == songs.length() - 1) {
+                                    if(i == songs.length() - 1){
+                                        song = (JSONObject) songs.get(0);
+                                    }
+                                    String songId = song.getString("id");
+                                    String audio = song.getString("audio");
+                                    JSONObject album = song.getJSONObject("album");
+                                    String picUrl = album.getString("picUrl");
+                                    mp3Info.setSongId(songId);
+                                    mp3Info.setAudio(audio);
+                                    mp3Info.setPicUrl(picUrl);
+                                    mp3Info.setSongName(name);
+                                    mp3Info.setArtist(singerName);
+                                    subscriber.onComplete(mp3Info);
+                                    break;
+                                }
+                            }
+                            subscriber.onError(new Exception("no"));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            subscriber.onError(e);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 请求音乐歌词
+     */
+    public static void getMusicLrc(final String name, final String singer, final Subscriber<String> subscriber) {
+        ThreadPoolUtil.getInstance().execute(new Runnable() {
+            @Override
+            public void run() {
+                getMusicId(name, singer, new Subscriber<Mp3Info>() {
+                    @Override
+                    public void onComplete(Mp3Info mp3Info) {
+                        Log.i(TAG, "getMusicLrc-onComplete: " + mp3Info.toString());
+                        OkHttpClient okHttpClient = ClientUtil.getOkHttpClient();
+                        Request request = new Request.Builder().get().url(URl_GET_MUSIC_LRC + mp3Info.getSongId()).build();
+                        okHttpClient.newCall(request).enqueue(new Callback() {
+                            @Override
+                            public void onFailure(Call call, IOException e) {
+                                subscriber.onError(e);
+                            }
+
+                            @Override
+                            public void onResponse(Call call, Response response) throws IOException {
+                                String s = response.body().string();
+                                Log.i(TAG, "getMusicLrc-onResponse: " + s);
+                                JSONObject jsonObject = string2Json(s);
+                                try {
+                                    String lrc = jsonObject.getString("lyric");
+                                    subscriber.onComplete(lrc);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                    subscriber.onError(e);
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        subscriber.onError(e);
+                    }
+                });
+            }
+        });
+    }
+
+    public static JSONObject string2Json(String s) {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(s);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonObject;
+    }
+
+    public static int dp2px(Context context, float dpValue) {
+        float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dpValue * scale + 0.5f);
+    }
+
+    public static int sp2px(Context context, float spValue) {
+        float fontScale = context.getResources().getDisplayMetrics().scaledDensity;
+        return (int) (spValue * fontScale + 0.5f);
     }
 }

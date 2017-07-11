@@ -15,6 +15,7 @@
             android:id="@+id/img_album"
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:scaleType="centerCrop"
             android:layout_gravity="center_vertical"
             android:src="@drawable/green" />
 

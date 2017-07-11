@@ -17,20 +17,10 @@ public class Mp3Info implements Parcelable {
     private long size;
     private String url;
 
-    public Mp3Info() {
-
-    }
-
-    public Mp3Info(Parcel parcel) {
-        id = parcel.readLong();
-        title = parcel.readString();
-        artist = parcel.readString();
-        album = parcel.readString();
-        albumId = parcel.readLong();
-        duration = parcel.readLong();
-        size = parcel.readLong();
-        url = parcel.readString();
-    }
+    private String songId;
+    private String songName;
+    private String picUrl;
+    private String audio;
 
     public long getId() {
         return id;
@@ -96,9 +86,59 @@ public class Mp3Info implements Parcelable {
         this.url = url;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public String getSongId() {
+        return songId;
+    }
+
+    public void setSongId(String songId) {
+        this.songId = songId;
+    }
+
+    public String getSongName() {
+        return songName;
+    }
+
+    public void setSongName(String songName) {
+        this.songName = songName;
+    }
+
+    public String getPicUrl() {
+        return picUrl;
+    }
+
+    public void setPicUrl(String picUrl) {
+        this.picUrl = picUrl;
+    }
+
+    public String getAudio() {
+        return audio;
+    }
+
+    public void setAudio(String audio) {
+        this.audio = audio;
+    }
+
+    public static Creator<Mp3Info> getCREATOR() {
+        return CREATOR;
+    }
+
+    public Mp3Info(){
+
+    }
+
+    protected Mp3Info(Parcel in) {
+        id = in.readLong();
+        title = in.readString();
+        artist = in.readString();
+        album = in.readString();
+        albumId = in.readLong();
+        duration = in.readLong();
+        size = in.readLong();
+        url = in.readString();
+        songId = in.readString();
+        songName = in.readString();
+        picUrl = in.readString();
+        audio = in.readString();
     }
 
     @Override
@@ -111,20 +151,44 @@ public class Mp3Info implements Parcelable {
         dest.writeLong(duration);
         dest.writeLong(size);
         dest.writeString(url);
+        dest.writeString(songId);
+        dest.writeString(songName);
+        dest.writeString(picUrl);
+        dest.writeString(audio);
     }
 
-    public static final Parcelable.Creator<Mp3Info> CREATOR = new Creator<Mp3Info>() {
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Mp3Info> CREATOR = new Creator<Mp3Info>() {
+        @Override
+        public Mp3Info createFromParcel(Parcel in) {
+            return new Mp3Info(in);
+        }
 
         @Override
         public Mp3Info[] newArray(int size) {
             return new Mp3Info[size];
         }
-
-        @Override
-        public Mp3Info createFromParcel(Parcel source) {
-            return new Mp3Info(source);
-        }
     };
 
-
+    @Override
+    public String toString() {
+        return "Mp3Info{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", artist='" + artist + '\'' +
+                ", album='" + album + '\'' +
+                ", albumId=" + albumId +
+                ", duration=" + duration +
+                ", size=" + size +
+                ", url='" + url + '\'' +
+                ", songId='" + songId + '\'' +
+                ", songName='" + songName + '\'' +
+                ", picUrl='" + picUrl + '\'' +
+                ", audio='" + audio + '\'' +
+                '}';
+    }
 }

@@ -29,6 +29,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.util.Property;
 
 public class PlayPauseDrawable extends Drawable {
@@ -84,7 +85,7 @@ public class PlayPauseDrawable extends Drawable {
     }
 
     @Override
-    public void draw(Canvas canvas) {
+    public void draw(@NonNull Canvas canvas) {
         mLeftPauseBar.rewind();
         mRightPauseBar.rewind();
 
@@ -198,9 +199,9 @@ public class PlayPauseDrawable extends Drawable {
     }
 
     public void resize(float mPauseBarWidth, float mPauseBarHeight, float mPauseBarDistance) {
-        this.mPauseBarWidth = mPauseBarWidth;
-        this.mPauseBarHeight = mPauseBarHeight;
-        this.mPauseBarDistance = mPauseBarDistance;
+        PlayPauseDrawable.mPauseBarWidth = mPauseBarWidth;
+        PlayPauseDrawable.mPauseBarHeight = mPauseBarHeight;
+        PlayPauseDrawable.mPauseBarDistance = mPauseBarDistance;
         invalidateSelf();
     }
 
@@ -212,11 +213,8 @@ public class PlayPauseDrawable extends Drawable {
     }
 
     public void setPlaying(boolean playing) {
-        System.out.println("isPlay(): " + isPlay());
-        System.out.println("playing: " + playing);
         if (isPlay() == playing && onPlayPauseToggleListener != null) {
             onPlayPauseToggleListener.onToggled();
-            System.out.println("isPlay() == playing: " + (isPlay() == playing));
         }
     }
 }

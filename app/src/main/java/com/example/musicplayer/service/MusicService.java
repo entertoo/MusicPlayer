@@ -17,13 +17,14 @@ import android.support.annotation.Nullable;
 import com.example.musicplayer.bean.Mp3Info;
 import com.example.musicplayer.utility.Constants;
 import com.example.musicplayer.utility.SpTools;
+import com.example.musicplayer.utility.ThreadPoolUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author haopi
@@ -38,13 +39,14 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private MusicBroadReceiver receiver;
     private int mCurrentPosition;
     private boolean isFirst = true;
-    private  boolean isPlaying;
+    private boolean isPlaying;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
     private Timer mTimer;
     private Random mRandom = new Random();
     public static int prv_position;
     private Message mMessage;
+    private static boolean isLoseFocus;
 
     @Override
     public void onCreate() {
@@ -150,10 +152,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     }
 
     private void sentPositionToMainByTimer() {
-        if (mTimer == null) {
-            mTimer = new Timer();
-        }
-        mTimer.schedule(new TimerTask() {
+        ThreadPoolUtil.getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -172,7 +171,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     e.printStackTrace();
                 }
             }
-        }, 0, 1000);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -299,7 +298,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     Intent intent_pause = new Intent();
                     intent_pause.setAction(Constants.ACTION_PAUSE);
                     sendBroadcast(intent_pause);
-
                     break;
             }
         }
@@ -319,12 +317,16 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             case AudioManager.AUDIOFOCUS_GAIN://你已经得到了音频焦点。
                 System.out.println("-------------AUDIOFOCUS_GAIN---------------");
                 // resume playback
-                mPlayer.start();
-                mPlayer.setVolume(1.0f, 1.0f);
+                if (isLoseFocus) {
+                    isLoseFocus = false;
+                    mPlayer.start();
+                    mPlayer.setVolume(1.0f, 1.0f);
+                }
                 break;
             case AudioManager.AUDIOFOCUS_LOSS://你已经失去了音频焦点很长时间了。你必须停止所有的音频播放
                 System.out.println("-------------AUDIOFOCUS_LOSS---------------");
                 // Lost focus for an unbounded amount of time: stop playback and release media player
+                isLoseFocus = false;
                 if (mPlayer.isPlaying())
                     mPlayer.stop();
                 mPlayer.release();
@@ -335,6 +337,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 // Lost focus for a short time, but we have to stop
                 // playback. We don't release the media player because playback
                 // is likely to resume
+                isLoseFocus = true;
                 if (mPlayer.isPlaying())
                     mPlayer.pause();
                 break;
@@ -342,6 +345,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 System.out.println("-------------AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK---------------");
                 // Lost focus for a short time, but it's ok to keep playing
                 // at an attenuated level
+                isLoseFocus = true;
                 if (mPlayer.isPlaying())
                     mPlayer.setVolume(0.1f, 0.1f);
                 break;

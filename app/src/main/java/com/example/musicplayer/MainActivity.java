@@ -13,6 +13,7 @@ import android.os.Messenger;
 import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -24,12 +25,14 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import com.example.musicplayer.bean.Mp3Info;
+import com.example.musicplayer.functions.Subscriber;
 import com.example.musicplayer.service.MusicService;
 import com.example.musicplayer.utility.Constants;
 import com.example.musicplayer.utility.LrcUtil;
-import com.example.musicplayer.utility.MusicUtil;
+import com.example.musicplayer.utility.MediaUtil;
 import com.example.musicplayer.utility.SpTools;
-import com.example.musicplayer.utility.StatusBarUtils;
+import com.example.musicplayer.utility.StatusBarUtil;
+import com.example.musicplayer.view.LrcView;
 import com.example.musicplayer.view.SlidingMenu;
 import com.example.musicview.MusicPlayerView;
 
@@ -39,14 +42,15 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    private static final String TAG = "MainActivity";
     private MusicPlayerView mpv;
     private ListView mListView;
     private ImageView mNext;
     private ImageView mPrevious;
-    private List<Mp3Info> mMusic_list = new ArrayList<>();
+    private List<Mp3Info> mMusicList = new ArrayList<>();
     private ImageView mIv_back;
     private SlidingMenu mSlidingMenu;
-    private TextView mCurrentLrc;
+    private LrcView mCurrentLrc;
     private TextView mSong;
     private TextView mSinger;
     private ImageView mPlayMode;
@@ -62,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String mSingerArtist;
     private Bitmap mBitmap;
     private LrcUtil mLrcUtil;// 歌词工具
+    private File mFile;
 
     private Handler handler = new Handler() {
         @Override
@@ -71,20 +76,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 int totalDuration = msg.arg2;
                 mpv.setProgress(currentPosition);
                 mpv.setMax(totalDuration);
-                if (mLrcUtil == null) {
-                    mLrcUtil = new LrcUtil(MainActivity.this);
-                }
-                // 序列化歌词
-                mFile = MusicUtil.getLrcFile(mMusic_list.get(mPosition).getUrl());
-                if (mFile != null) {
-                    mLrcUtil.ReadLRCAndCconvertFile(mFile);
-                    // 使用功能
-                    mLrcUtil.RefreshLRC(currentPosition);
-                    // 1. 设置集合
-                    //mTv_lyricShow.SetTimeLrc(LrcUtil.lrclist);
-                    // 2. 更新滚动歌词
-                    //mTv_lyricShow.SetNowPlayIndex(currentPosition);
-                }
+                mCurrentLrc.updateTime(currentPosition);
             }
             if (msg.what == Constants.MSG_PREPARED) {
                 mPosition = msg.arg1;
@@ -102,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
-    private File mFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initView() {
         // 去掉标题
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        StatusBarUtils.enableTranslucentStatusbar(this);
+        StatusBarUtil.enableTranslucentStatusbar(this);
         setContentView(R.layout.activity_main);
         mSlidingMenu = (SlidingMenu) findViewById(R.id.sm);
         // left
@@ -125,18 +116,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mIv_back = (ImageView) findViewById(R.id.back);//切换左右控件
         mSong = (TextView) findViewById(R.id.textViewSong);//歌名
         mSinger = (TextView) findViewById(R.id.textViewSinger);//歌手
-        mCurrentLrc = (TextView) findViewById(R.id.lrc);//当前歌词
+        mCurrentLrc = (LrcView) findViewById(R.id.lrc);//当前歌词
         mpv = (MusicPlayerView) findViewById(R.id.mpv);//自定义播放控件
         mPrevious = (ImageView) findViewById(R.id.previous);//上一首
         mPlayMode = (ImageView) findViewById(R.id.play_mode);//播放模式
         mNext = (ImageView) findViewById(R.id.next);//下一首
         remoteViews = new RemoteViews(getPackageName(), R.layout.customnotice);//通知栏布局
-        creatNotification();//创建通知栏
+        createNotification();//创建通知栏
     }
 
     private void initData() {
         //音乐列表
-        mMusic_list = MusicUtil.getMp3Infos(this);
+        mMusicList = MediaUtil.getMp3Infos(this);
         //启动音乐服务
         startMusicService();
         //消息通知
@@ -155,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void startMusicService() {
         Intent musicService = new Intent();
         musicService.setClass(getApplicationContext(), MusicService.class);
-        musicService.putParcelableArrayListExtra("music_list", (ArrayList<? extends Parcelable>) mMusic_list);
+        musicService.putParcelableArrayListExtra("music_list", (ArrayList<? extends Parcelable>) mMusicList);
         musicService.putExtra("messenger", new Messenger(handler));
         startService(musicService);
     }
@@ -164,16 +155,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 刷新播放控件的歌名，歌手，图片，按钮的形状
      */
     private void refreshMusicUI(int position, boolean isPlaying) {
-        if (mMusic_list.size() > 0 && position < mMusic_list.size() - 1) {
+        if (mMusicList.size() > 0 && position < mMusicList.size() - 1) {
             // 1.获取播放数据
-            mMp3Info = mMusic_list.get(position);
+            mMp3Info = mMusicList.get(position);
+            // 序列化歌词
+            mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
+            if (mFile != null) {
+                mCurrentLrc.loadLrc(mFile);
+            }else {
+                Log.i(TAG, "refreshMusicUI: mp3Info: " + mMp3Info.toString());
+                LrcUtil.getMusicLrc(mMp3Info.getTitle(), mMp3Info.getArtist(), new Subscriber<String>() {
+                    @Override
+                    public void onComplete(String s) {
+                        mCurrentLrc.loadLrc(s);
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        mCurrentLrc.reset();
+                    }
+                });
+            }
             mSongTitle = mMp3Info.getTitle();
             mSingerArtist = mMp3Info.getArtist();
-            mBitmap = MusicUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            mBitmap = MediaUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
             // 2.更新播放控件UI
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
-            mCurrentLrc.setText("暂无歌词");
+            //mCurrentLrc.setText("暂无歌词");
             mpv.setCoverBitmap(mBitmap);
             // 选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
@@ -253,7 +262,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 创建通知栏
      */
     @SuppressLint("NewApi")
-    private void creatNotification() {
+    private void createNotification() {
         mBuilder = new NotificationCompat.Builder(this);
         // 点击跳转到主界面
         Intent intent_main = new Intent(this, MainActivity.class);
@@ -386,12 +395,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public class MusicListAdapter extends BaseAdapter {
         @Override
         public int getCount() {
-            return mMusic_list.size();
+            return mMusicList.size();
         }
 
         @Override
         public Object getItem(int position) {
-            return mMusic_list.get(position);
+            return mMusicList.get(position);
         }
 
         @Override
@@ -412,9 +421,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 holder = (ViewHolder) convertView.getTag();
             }
-            holder.mImgAlbum.setImageBitmap(MusicUtil.getArtwork(MainActivity.this, mMusic_list.get(position).getId(), mMusic_list.get(position).getAlbumId(), true, true));
-            holder.mTvTitle.setText(mMusic_list.get(position).getTitle());
-            holder.mTvArtist.setText(mMusic_list.get(position).getArtist());
+            holder.mImgAlbum.setImageBitmap(MediaUtil.getArtwork(MainActivity.this, mMusicList.get(position).getId(), mMusicList.get(position).getAlbumId(), true, true));
+            holder.mTvTitle.setText(mMusicList.get(position).getTitle());
+            holder.mTvArtist.setText(mMusicList.get(position).getArtist());
 
             if (mPosition == position) {
                 holder.mTvTitle.setTextColor(getResources().getColor(R.color.colorAccent));
@@ -452,13 +461,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (tv != null) {
             tv.setTextColor(getResources().getColor(R.color.colorAccent));
         }
-    }
-
-    /**
-     * 修改minilrc的文本
-     */
-    public void setMiniLrc(String lrcString) {
-        mCurrentLrc.setText(lrcString);
     }
 
     @Override

@@ -10,11 +10,10 @@ import android.view.WindowManager;
 /**
  * 状态栏辅助类
  */
-public class StatusBarUtils {
+public class StatusBarUtil {
 
     /**
      * 启用 透明状态栏
-     * @param activity
      */
     public static void enableTranslucentStatusbar(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

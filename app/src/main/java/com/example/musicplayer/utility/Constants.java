@@ -27,4 +27,7 @@ public class Constants {
     public static final int MSG_ONPREPARED = 001;
     public static final int MSG_PREPARED = 002;
     public static final int MSG_PLAY = 003;
+
+    public static final String URL_GET_MUSIC_ID = "http://s.music.163.com/search/get/?src=lofter&type=1&filterDj=true&s=";
+    public static final String URl_GET_MUSIC_LRC = "http://music.163.com/api/song/media?id=";
 }

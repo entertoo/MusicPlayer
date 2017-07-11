@@ -89,10 +89,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mIsPlaying = (boolean) msg.obj;
                 refreshPlayUI(mIsPlaying);
             }
-            if (msg.what == Constants.ACTION_CANCEL) {
+            if (msg.what == Constants.MSG_CANCEL) {
                 if (remoteViews != null) {
                     mNotificationManager.cancel(100);
                 }
+                finish();
             }
         }
     };
@@ -241,7 +242,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 更新播放控件
-     * @param isPlaying
      */
     private void updateMpv(boolean isPlaying) {
         mpv.setAutoProgress(false);
@@ -299,8 +299,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         remoteViews.setOnClickPendingIntent(R.id.notice, pending_intent_go);
 
         // 4个参数context, requestCode, intent, flags
-        Intent intent_canel = new Intent();
-        PendingIntent pending_intent_close = PendingIntent.getActivity(this, 2, intent_canel, PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent intent_cancel = new Intent();
+        intent_cancel.setAction(Constants.ACTION_CLOSE);
+        PendingIntent pending_intent_close = PendingIntent.getActivity(this, 2, intent_cancel, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.widget_close, pending_intent_close);
 
         // 设置上一曲

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,7 +41,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private boolean isPlaying;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
-    private Timer mTimer;
     private Random mRandom = new Random();
     public static int prv_position;
     private Message mMessage;
@@ -86,7 +84,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     @Override
     public void onDestroy() {
         mMessage = Message.obtain();
-        mMessage.what = Constants.ACTION_CANCEL;
+        mMessage.what = Constants.MSG_CANCEL;
         try {
             mMessenger.send(mMessage);
         } catch (RemoteException e) {
@@ -99,10 +97,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         if (receiver != null) {
             unregisterReceiver(receiver); // 服务终止时解绑
         }
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
-        }
+        stopSelf();
     }
 
 
@@ -217,6 +212,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         intentFilter.addAction(Constants.ACTION_PLAY);
         intentFilter.addAction(Constants.ACTION_NEXT);
         intentFilter.addAction(Constants.ACTION_PRV);
+        intentFilter.addAction(Constants.ACTION_CLOSE);
         intentFilter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
         intentFilter.setPriority(1000);
         if (receiver == null) {
@@ -292,6 +288,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     } else if (playMode % 3 == 0) {// 0.随机播放
                         play(getRandom());
                     }
+                    break;
+                case Constants.ACTION_CLOSE:
+                    onDestroy();
                     break;
                 case AudioManager.ACTION_AUDIO_BECOMING_NOISY:
                     //如果耳机拨出时暂停播放

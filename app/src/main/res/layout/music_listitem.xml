@@ -16,8 +16,7 @@
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:scaleType="centerCrop"
-            android:layout_gravity="center_vertical"
-            android:src="@drawable/green" />
+            android:layout_gravity="center_vertical"/>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -32,7 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                android:singleLine="true"
+                android:lines="1"
                 android:textColor="#abbbbb"
                 android:textSize="16sp" />
 

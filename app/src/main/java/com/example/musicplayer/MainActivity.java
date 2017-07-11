@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -13,6 +14,7 @@ import android.os.Messenger;
 import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -134,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startMusicService();
         //消息通知
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mLeftView.setAdapter(new MusicListAdapter());
+        mLeftView.setAdapter(new MediaListAdapter());
 
         mIsPlaying = SpTools.getBoolean(getApplicationContext(), "music_play_pause", false);
         mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
@@ -174,7 +176,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     @Override
                     public void onError(Exception e) {
-                        mCurrentLrc.reset();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mCurrentLrc.reset();
+                            }
+                        });
                     }
                 });
             }
@@ -184,8 +191,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 2.更新播放控件UI
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
-            //mCurrentLrc.setText("暂无歌词");
             mpv.setCoverBitmap(mBitmap);
+            //更换背景
+            Palette.from(mBitmap).generate(new Palette.PaletteAsyncListener() {
+                @Override
+                public void onGenerated(Palette p) {
+                    int mutedColor = p.getMutedColor(Color.BLACK);
+                    int lightMutedColor = p.getLightMutedColor(Color.BLACK);
+                    Palette.Swatch vibrantSwatch = p.getVibrantSwatch();       //获取到充满活力的这种色调
+                    Palette.Swatch darkVibrantSwatch = p.getDarkVibrantSwatch();    //获取充满活力的黑
+                    Palette.Swatch lightVibrantSwatch = p.getLightVibrantSwatch();   //获取充满活力的亮
+                    Palette.Swatch mutedSwatch = p.getMutedSwatch();           //获取柔和的色调
+                    Palette.Swatch darkMutedSwatch = p.getDarkMutedSwatch();      //获取柔和的黑
+                    Palette.Swatch lightMutedSwatch = p.getLightMutedSwatch();    //获取柔和的亮
+
+                    mainView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
+                    mLeftView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
+
+                }
+            });
             // 选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
@@ -370,8 +394,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 发送广播
-     *
-     * @param action
      */
     private void sendBroadcast(String action) {
         Intent intent = new Intent();
@@ -381,8 +403,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 发送广播
-     *
-     * @param action
      */
     private void sendBroadcast(String action, int position) {
         Intent intent = new Intent();
@@ -394,7 +414,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * 左侧音乐列表适配器
      */
-    public class MusicListAdapter extends BaseAdapter {
+    private class MediaListAdapter extends BaseAdapter {
         @Override
         public int getCount() {
             return mMusicList.size();
@@ -438,7 +458,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public class ViewHolder {
+    private static class ViewHolder {
         ImageView mImgAlbum;
         TextView mTvTitle;
         TextView mTvArtist;

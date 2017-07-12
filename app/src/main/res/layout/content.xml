@@ -76,7 +76,6 @@
             android:layout_marginTop="30dp"
             android:src="@drawable/player_btn_mode_playall_normal" />
 
-
         <ImageView
             android:id="@+id/next"
             android:layout_width="20dp"
@@ -85,7 +84,6 @@
             android:layout_below="@+id/mpv"
             android:layout_marginTop="30dp"
             android:background="@drawable/icon_next" />
-
 
         <ImageView
             android:id="@+id/previous"

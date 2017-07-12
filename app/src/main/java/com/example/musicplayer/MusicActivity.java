@@ -1,7 +1,6 @@
 package com.example.musicplayer;
 
 import android.annotation.SuppressLint;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -43,10 +42,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MusicActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "MusicActivity";
     private MusicPlayerView mpv;
+    private RelativeLayout mainView;
     private ListView mLeftView;
     private ImageView mNext;
     private ImageView mPrevious;
@@ -58,9 +58,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mSinger;
     private ImageView mPlayMode;
     private int mPosition;
-    private boolean mIsPlaying;
+    private boolean mIsPlaying = false;
 
-    private Notification mNotification;
     private RemoteViews remoteViews;
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mBuilder;
@@ -73,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == Constants.MSG_ONPREPARED) {
+            if (msg.what == Constants.MSG_PROGRESS) {
                 int currentPosition = msg.arg1;
                 int totalDuration = msg.arg2;
                 mpv.setProgress(currentPosition);
@@ -85,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mIsPlaying = (boolean) msg.obj;
                 refreshMusicUI(mPosition, mIsPlaying);
             }
-            if (msg.what == Constants.MSG_PLAY) {
+            if (msg.what == Constants.MSG_PLAY_STATE) {
                 mIsPlaying = (boolean) msg.obj;
                 refreshPlayUI(mIsPlaying);
             }
@@ -97,7 +96,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
-    private RelativeLayout mainView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,11 +133,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMusicList = MediaUtil.getMp3Infos(this);
         //启动音乐服务
         startMusicService();
-        //消息通知
+        //消息管理
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mLeftView.setAdapter(new MediaListAdapter());
-
-        mIsPlaying = SpTools.getBoolean(getApplicationContext(), "music_play_pause", false);
+        //播放位置
         mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
         //初始化控件UI
         refreshMusicUI(mPosition, mIsPlaying);
@@ -167,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
             if (mFile != null) {
                 mCurrentLrc.loadLrc(mFile);
-            }else {
+            } else {
                 Log.i(TAG, "refreshMusicUI: mp3Info: " + mMp3Info.toString());
                 LrcUtil.getMusicLrc(mMp3Info.getTitle(), mMp3Info.getArtist(), new Subscriber<String>() {
                     @Override
@@ -188,11 +185,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             mSongTitle = mMp3Info.getTitle();
             mSingerArtist = mMp3Info.getArtist();
-            mBitmap = MediaUtil.getArtwork(MainActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            mBitmap = MediaUtil.getArtwork(MusicActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
             // 2.更新播放控件UI
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
+            // 更新播放控件
             mpv.setCoverBitmap(mBitmap);
+            updateMpv(isPlaying);
             //更换背景
             Palette.from(mBitmap).generate(new Palette.PaletteAsyncListener() {
                 @Override
@@ -214,8 +213,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
-            // 更新播放控件
-            updateMpv(isPlaying);
             // 3.更新通知栏UI
             remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
@@ -227,7 +224,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
             }
             // 显示设置通知栏
-            mNotificationManager.notify(100, mNotification);
+            mNotificationManager.notify(100, mBuilder.build());
         }
     }
 
@@ -236,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void refreshPlayUI(boolean isPlaying) {
         updateMpv(isPlaying);
-
         updateNotification();
     }
 
@@ -244,17 +240,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 更新播放控件
      */
     private void updateMpv(boolean isPlaying) {
-        mpv.setAutoProgress(false);
         // content播放控件
         if (isPlaying) {
-            if (!mpv.isRotating()) {
-                mpv.start();
-            }
+            mpv.start();
         } else {
-            if (mpv.isRotating()) {
-                mpv.stop();
-            }
+            mpv.stop();
         }
+
     }
 
     /**
@@ -281,7 +273,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
             remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
-        mNotificationManager.notify(100, mNotification);
+        mNotificationManager.notify(100, mBuilder.build());
     }
 
     /**
@@ -291,9 +283,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void createNotification() {
         mBuilder = new NotificationCompat.Builder(this);
         // 点击跳转到主界面
-        Intent intent_main = new Intent(this, MainActivity.class);
+        Intent intent_main = new Intent(this, MusicActivity.class);
         //TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);  //得到返回栈
-        //stackBuilder.addParentStack(MainActivity.class);  //向返回栈中压入activity，这里注意不是压入的父activity，而是点击通知启动的activity
+        //stackBuilder.addParentStack(MusicActivity.class);  //向返回栈中压入activity，这里注意不是压入的父activity，而是点击通知启动的activity
         //stackBuilder.addNextIntent(intent_main);
         PendingIntent pending_intent_go = PendingIntent.getActivity(this, 1, intent_main, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.notice, pending_intent_go);
@@ -301,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 4个参数context, requestCode, intent, flags
         Intent intent_cancel = new Intent();
         intent_cancel.setAction(Constants.ACTION_CLOSE);
-        PendingIntent pending_intent_close = PendingIntent.getActivity(this, 2, intent_cancel, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pending_intent_close = PendingIntent.getBroadcast(this, 2, intent_cancel, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.widget_close, pending_intent_close);
 
         // 设置上一曲
@@ -331,13 +323,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         PendingIntent pending_intent_next = PendingIntent.getBroadcast(this, 6, intent_next, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.widget_next, pending_intent_next);
 
-        //mBuilder.setSmallIcon(R.drawable.notification_bar_icon); // 设置顶部图标（状态栏）
-
-        mNotification = mBuilder.build();
-        mNotification.contentView = remoteViews; // 设置下拉图标
-        mNotification.bigContentView = remoteViews; // 防止显示不完全,需要添加apisupport
-        mNotification.flags = Notification.FLAG_ONGOING_EVENT;
-        mNotification.icon = R.drawable.notification_bar_icon;
+        mBuilder.setSmallIcon(R.mipmap.ic_launcher); // 设置顶部图标（状态栏）
+        mBuilder.setContent(remoteViews);
+        mBuilder.setOngoing(true);
     }
 
     private void initEvent() {
@@ -393,18 +381,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    /**
-     * 发送广播
-     */
     private void sendBroadcast(String action) {
         Intent intent = new Intent();
         intent.setAction(action);
         sendBroadcast(intent);
     }
 
-    /**
-     * 发送广播
-     */
     private void sendBroadcast(String action, int position) {
         Intent intent = new Intent();
         intent.putExtra("position", position);
@@ -436,7 +418,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ViewHolder holder;
             if (convertView == null) {
                 holder = new ViewHolder();
-                convertView = View.inflate(MainActivity.this, R.layout.music_listitem, null);
+                convertView = View.inflate(MusicActivity.this, R.layout.music_listitem, null);
                 holder.mImgAlbum = (ImageView) convertView.findViewById(R.id.img_album);
                 holder.mTvTitle = (TextView) convertView.findViewById(R.id.tv_title);
                 holder.mTvArtist = (TextView) convertView.findViewById(R.id.tv_artist);
@@ -444,7 +426,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 holder = (ViewHolder) convertView.getTag();
             }
-            holder.mImgAlbum.setImageBitmap(MediaUtil.getArtwork(MainActivity.this, mMusicList.get(position).getId(), mMusicList.get(position).getAlbumId(), true, true));
+            holder.mImgAlbum.setImageBitmap(MediaUtil.getArtwork(MusicActivity.this, mMusicList.get(position).getId(), mMusicList.get(position).getAlbumId(), true, true));
             holder.mTvTitle.setText(mMusicList.get(position).getTitle());
             holder.mTvArtist.setText(mMusicList.get(position).getArtist());
 

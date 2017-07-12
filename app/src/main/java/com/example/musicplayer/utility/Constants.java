@@ -24,9 +24,10 @@ public class Constants {
     public static final String ACTION_SEEK ="com.example.musicplayer.seek";
     //以上操作结束的时候
     public static final String ACTION_COMPLETION = "com.example.musicplayer.completion";
-    public static final int MSG_ONPREPARED = 001;
+
+    public static final int MSG_PROGRESS = 001;
     public static final int MSG_PREPARED = 002;
-    public static final int MSG_PLAY = 003;
+    public static final int MSG_PLAY_STATE = 003;
     // 取消
     public static final int MSG_CANCEL = 004;
 

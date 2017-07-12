@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/TranslucentTheme">
         <activity
-            android:name=".MainActivity"
+            android:name=".MusicActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <intent-filter>

@@ -29,6 +29,7 @@ import com.squareup.picasso.Target;
 
 public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
 
+    private static final String TAG = "MusicPlayerView";
     /**
      * Rect for get time height and width
      */
@@ -220,7 +221,7 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      * Auto progress value start progressing when
      * cover image start rotating.
      */
-    private boolean isAutoProgress = true;
+    private boolean isAutoProgress = false;
 
     /**
      * Progressview and time will be visible/invisible depends on this
@@ -243,6 +244,7 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
     private AnimatorSet mAnimatorSet;
 
     private boolean mFirstDraw = true;
+    private int progressDegree;
 
     /**
      * Constructor
@@ -400,10 +402,10 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
         if (mProgressVisibility) {
             //Draw empty progress
             canvas.drawArc(rectF, 145, 250, false, mPaintProgressEmpty);
-
-            if (calculatePastProgressDegree() <= 250) {
+            progressDegree = calculatePastProgressDegree();
+            if (progressDegree <= 250 && progressDegree != 0) {
                 //Draw loaded progress
-                canvas.drawArc(rectF, 145, calculatePastProgressDegree(), false, mPaintProgressLoaded);
+                canvas.drawArc(rectF, 145, progressDegree, false, mPaintProgressLoaded);
             }
 
             //Draw left time text
@@ -494,7 +496,6 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      */
     public void start() {
         isRotating = true;
-        mPlayPauseDrawable.setIsPlaying(isRotating);
         mPlayPauseDrawable.setPlaying(isRotating);
         mHandlerRotate.removeCallbacksAndMessages(null);
         mHandlerRotate.postDelayed(mRunnableRotate, ROTATE_DELAY);
@@ -510,7 +511,6 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      */
     public void stop() {
         isRotating = false;
-        mPlayPauseDrawable.setIsPlaying(isRotating);
         mPlayPauseDrawable.setPlaying(isRotating);
         postInvalidate();
     }
@@ -675,6 +675,16 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
         if (0 <= currentProgress && currentProgress <= maxProgress) {
             this.currentProgress = currentProgress;
             postInvalidate();
+        }
+    }
+
+    /**
+     * Sets current seconds of music
+     */
+    public void resetProgress(int currentProgress) {
+        if (0 <= currentProgress && currentProgress <= maxProgress) {
+            this.currentProgress = currentProgress;
+            invalidate();
         }
     }
 

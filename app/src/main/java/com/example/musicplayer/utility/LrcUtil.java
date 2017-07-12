@@ -3,7 +3,7 @@ package com.example.musicplayer.utility;
 import android.content.Context;
 import android.util.Log;
 
-import com.example.musicplayer.MainActivity;
+import com.example.musicplayer.MusicActivity;
 import com.example.musicplayer.bean.Mp3Info;
 import com.example.musicplayer.functions.Subscriber;
 
@@ -36,12 +36,12 @@ import static com.example.musicplayer.utility.Constants.URl_GET_MUSIC_LRC;
  */
 public class LrcUtil {
     private static final String TAG = "LRCUtils";
-    private MainActivity activity;
+    private MusicActivity activity;
     public static Vector<Timelrc> lrclist; //ArrayList
     private boolean IsLyricExist = false;
     private int lastLine = 0;
 
-    public LrcUtil(MainActivity activityActivity) {
+    public LrcUtil(MusicActivity activityActivity) {
         activity = activityActivity;
     }
 

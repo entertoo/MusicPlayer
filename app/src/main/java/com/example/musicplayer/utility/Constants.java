@@ -33,4 +33,6 @@ public class Constants {
 
     public static final String URL_GET_MUSIC_ID = "http://s.music.163.com/search/get/?src=lofter&type=1&filterDj=true&s=";
     public static final String URl_GET_MUSIC_LRC = "http://music.163.com/api/song/media?id=";
+
+    public static final int NOTIFICATION_CEDE = 100;
 }

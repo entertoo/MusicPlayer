@@ -89,9 +89,6 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
                 refreshPlayUI(mIsPlaying);
             }
             if (msg.what == Constants.MSG_CANCEL) {
-                if (remoteViews != null) {
-                    mNotificationManager.cancel(100);
-                }
                 finish();
             }
         }
@@ -157,7 +154,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
      * 刷新播放控件的歌名，歌手，图片，按钮的形状
      */
     private void refreshMusicUI(int position, boolean isPlaying) {
-        if (mMusicList.size() > 0 && position < mMusicList.size() - 1) {
+        if (mMusicList.size() > 0 && position < mMusicList.size()) {
             // 1.获取播放数据
             mMp3Info = mMusicList.get(position);
             // 序列化歌词
@@ -189,7 +186,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             // 2.更新播放控件UI
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
-            // 更新播放控件
+            // 3.更新播放控件
             mpv.setCoverBitmap(mBitmap);
             updateMpv(isPlaying);
             //更换背景
@@ -197,23 +194,17 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
                 @Override
                 public void onGenerated(Palette p) {
                     int mutedColor = p.getMutedColor(Color.BLACK);
-                    int lightMutedColor = p.getLightMutedColor(Color.BLACK);
-                    Palette.Swatch vibrantSwatch = p.getVibrantSwatch();       //获取到充满活力的这种色调
-                    Palette.Swatch darkVibrantSwatch = p.getDarkVibrantSwatch();    //获取充满活力的黑
-                    Palette.Swatch lightVibrantSwatch = p.getLightVibrantSwatch();   //获取充满活力的亮
-                    Palette.Swatch mutedSwatch = p.getMutedSwatch();           //获取柔和的色调
                     Palette.Swatch darkMutedSwatch = p.getDarkMutedSwatch();      //获取柔和的黑
-                    Palette.Swatch lightMutedSwatch = p.getLightMutedSwatch();    //获取柔和的亮
 
                     mainView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
                     mLeftView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
 
                 }
             });
-            // 选中左侧播放中的歌曲颜色
+            // 4.选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
-            // 3.更新通知栏UI
+            // 5.更新通知栏UI
             remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
             remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
@@ -223,8 +214,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             } else {
                 remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
             }
-            // 显示设置通知栏
-            mNotificationManager.notify(100, mBuilder.build());
+            mNotificationManager.notify(Constants.NOTIFICATION_CEDE, mBuilder.build());
         }
     }
 
@@ -296,7 +286,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
         PendingIntent pending_intent_close = PendingIntent.getBroadcast(this, 2, intent_cancel, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.widget_close, pending_intent_close);
 
-        // 设置上一曲
+        // 上一曲
         Intent intent_prv = new Intent();
         intent_prv.setAction(Constants.ACTION_PRV);
         PendingIntent pending_intent_prev = PendingIntent.getBroadcast(this, 3, intent_prv, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -471,10 +461,6 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (remoteViews != null) {
-            //mNotificationManager.cancel(100);
-        }
-        SpTools.setBoolean(getApplicationContext(), "music_play_pause", mIsPlaying);
         SpTools.setInt(getApplicationContext(), "music_current_position", mPosition);
     }
 

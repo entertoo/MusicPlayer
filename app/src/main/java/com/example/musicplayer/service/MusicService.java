@@ -1,5 +1,6 @@
 package com.example.musicplayer.service;
 
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -42,6 +43,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     public static int prv_position;
     private Message mMessage;
     private static boolean isLoseFocus;
+    private NotificationManager notificationManager;
 
     @Override
     public void onCreate() {
@@ -58,7 +60,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         //创建audioManger
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-
+        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         super.onCreate();
     }
 
@@ -81,6 +83,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     @Override
     public void onDestroy() {
         Log.i(TAG, "onDestroy: ");
+        notificationManager.cancel(Constants.NOTIFICATION_CEDE);
         mMessage = Message.obtain();
         mMessage.what = Constants.MSG_CANCEL;
         try {

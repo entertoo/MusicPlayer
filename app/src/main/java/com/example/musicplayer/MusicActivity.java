@@ -88,11 +88,11 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             if (msg.what == Constants.MSG_PREPARED) {
                 mPosition = msg.arg1;
                 mIsPlaying = (boolean) msg.obj;
-                refreshMusicUI(mPosition, mIsPlaying);
+                switchSongUI(mPosition, mIsPlaying);
             }
             if (msg.what == Constants.MSG_PLAY_STATE) {
                 mIsPlaying = (boolean) msg.obj;
-                refreshPlayUI(mIsPlaying);
+                refreshPlayStateUI(mIsPlaying);
             }
             if (msg.what == Constants.MSG_CANCEL) {
                 finish();
@@ -110,7 +110,6 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
 
     @SuppressLint("InlinedApi")
     private void initView() {
-        // 去掉标题
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         StatusBarUtil.enableTranslucentStatusbar(this);
         setContentView(R.layout.activity_main);
@@ -139,10 +138,10 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
         //消息管理
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mLeftView.setAdapter(new MediaListAdapter());
-        //播放位置
+        //初始化控件UI，默认显示历史播放歌曲
         mPosition = SpTools.getInt(getApplicationContext(), "music_current_position", 0);
-        //初始化控件UI
-        refreshMusicUI(mPosition, mIsPlaying);
+        mIsPlaying = MusicService.isPlaying();
+        switchSongUI(mPosition, mIsPlaying);
     }
 
     /**
@@ -159,14 +158,36 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
     /**
      * 刷新播放控件的歌名，歌手，图片，按钮的形状
      */
-    private void refreshMusicUI(int position, boolean isPlaying) {
+    private void switchSongUI(int position, boolean isPlaying) {
         if (mMusicList.size() > 0 && position < mMusicList.size()) {
             // 1.获取播放数据
             mMp3Info = mMusicList.get(position);
-            // 序列化歌词
+            // 2.设置歌曲名，歌手
+            mSongTitle = mMp3Info.getTitle();
+            mSingerArtist = mMp3Info.getArtist();
+            mSong.setText(mSongTitle);
+            mSinger.setText(mSingerArtist);
+            // 3.更新notification通知栏和播放控件UI
+            mBitmap = MediaUtil.getArtwork(MusicActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
+            remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
+            remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
+            refreshPlayStateUI(isPlaying);
+            mpv.setCoverBitmap(mBitmap);
+            // 4.更换音乐背景
+            Palette.from(mBitmap).generate(new Palette.PaletteAsyncListener() {
+                @Override
+                public void onGenerated(Palette p) {
+                    int mutedColor = p.getMutedColor(Color.BLACK);
+                    Palette.Swatch darkMutedSwatch = p.getDarkMutedSwatch();      //获取柔和的黑
+                    mainView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
+                    mLeftView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
+                }
+            });
+            // 5.设置歌词
             mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
             if (mFile != null) {
-                Log.i(TAG, "refreshMusicUI: mFile != null");
+                Log.i(TAG, "switchSongUI: mFile != null");
                 try {
                     BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(new FileInputStream(mFile)));
                     StringBuilder sb = new StringBuilder();
@@ -209,43 +230,16 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
                     }
                 });
             }
-            mSongTitle = mMp3Info.getTitle();
-            mSingerArtist = mMp3Info.getArtist();
-            mBitmap = MediaUtil.getArtwork(MusicActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
-            // 2.更新播放控件UI
-            mSong.setText(mSongTitle);
-            mSinger.setText(mSingerArtist);
-            // 3.更新播放控件
-            mpv.setCoverBitmap(mBitmap);
-            updateMpv(isPlaying);
-            //更换背景
-            Palette.from(mBitmap).generate(new Palette.PaletteAsyncListener() {
-                @Override
-                public void onGenerated(Palette p) {
-                    int mutedColor = p.getMutedColor(Color.BLACK);
-                    Palette.Swatch darkMutedSwatch = p.getDarkMutedSwatch();      //获取柔和的黑
-
-                    mainView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
-                    mLeftView.setBackgroundColor(darkMutedSwatch != null ? darkMutedSwatch.getRgb() : mutedColor);
-
-                }
-            });
-            // 4.选中左侧播放中的歌曲颜色
+            // 6.选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
-            // 5.更新通知栏UI
-            remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
-            remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
-            remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
-            // 创建并设置通知栏中remoteViews的播放与暂停UI
-            updateNotification();
         }
     }
 
     /**
      * 刷新播放控件及通知
      */
-    private void refreshPlayUI(boolean isPlaying) {
+    private void refreshPlayStateUI(boolean isPlaying) {
         updateMpv(isPlaying);
         updateNotification();
     }

@@ -52,7 +52,7 @@ public class MediaUtil {
         int mUrl = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
         int mIsMusic = cursor.getColumnIndex(MediaStore.Audio.Media.IS_MUSIC);
 
-        List<Mp3Info> mp3Infos = new ArrayList<Mp3Info>();
+        List<Mp3Info> mp3Infos = new ArrayList<>();
         for (int i = 0, p = cursor.getCount(); i < p; i++) {
             cursor.moveToNext();
             Mp3Info mp3Info = new Mp3Info();
@@ -89,10 +89,10 @@ public class MediaUtil {
      * @return
      */
     public static List<HashMap<String, String>> getMusicMaps(List<Mp3Info> mp3Infos) {
-        List<HashMap<String, String>> mp3list = new ArrayList<HashMap<String, String>>();
+        List<HashMap<String, String>> mp3list = new ArrayList<>();
         for (Iterator iterator = mp3Infos.iterator(); iterator.hasNext(); ) {
             Mp3Info mp3Info = (Mp3Info) iterator.next();
-            HashMap<String, String> map = new HashMap<String, String>();
+            HashMap<String, String> map = new HashMap<>();
             map.put("title", mp3Info.getTitle());
             map.put("Artist", mp3Info.getArtist());
             map.put("album", mp3Info.getAlbum());

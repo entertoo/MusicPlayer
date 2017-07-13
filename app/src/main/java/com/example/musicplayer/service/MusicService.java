@@ -32,7 +32,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private static final String TAG = "MusicService";
     private List<Mp3Info> mMusic_list = new ArrayList<>();
     private Messenger mMessenger;
-    private MediaPlayer mPlayer;
+    private static MediaPlayer mPlayer;
     private MusicBroadReceiver receiver;
     private int mCurrentPosition;
     private boolean isFirst = true;
@@ -309,6 +309,13 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private int getRandom() {
         mPosition = mRandom.nextInt(mMusic_list.size());
         return mPosition;
+    }
+
+    public static boolean isPlaying(){
+        if(mPlayer != null){
+            return mPlayer.isPlaying();
+        }
+        return false;
     }
 
     /**

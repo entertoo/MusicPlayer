@@ -36,7 +36,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private MusicBroadReceiver receiver;
     private int mCurrentPosition;
     private boolean isFirst = true;
-    private boolean isPlaying;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
     private Random mRandom = new Random();
@@ -122,7 +121,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     }
 
     private void sentPreparedMessageToMain() {
-        mMessage = Message.obtain();
+        mMessage = new Message();
         mMessage.what = Constants.MSG_PREPARED;
         mMessage.arg1 = mPosition;
         mMessage.obj = mPlayer.isPlaying();
@@ -231,7 +230,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 case Constants.ACTION_LIST_ITEM:
                     Log.i(TAG, "onReceive: ACTION_LIST_ITEM");
                     //点击左侧菜单
-                    isPlaying = true;
                     isFirst = false;
                     mPosition = intent.getIntExtra("position", 0);
                     play(mPosition);
@@ -239,12 +237,10 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 case Constants.ACTION_PAUSE:
                     Log.i(TAG, "onReceive: ACTION_PAUSE");
                     //暂停播放
-                    isPlaying = false;
                     pause();
                     break;
                 case Constants.ACTION_PLAY:
                     Log.i(TAG, "onReceive: ACTION_PLAY");
-                    isPlaying = true;
                     //开始播放
                     if (isFirst) {
                         isFirst = false;
@@ -260,7 +256,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     Log.i(TAG, "onReceive: ACTION_NEXT");
                     //下一首
                     prv_position = mPosition;
-                    isPlaying = true;
                     if (playMode % 3 == 1) {//1.单曲循环
                         play(mPosition);
                     } else if (playMode % 3 == 2) {//2.列表播放
@@ -279,7 +274,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     Log.i(TAG, "onReceive: ACTION_PRV");
                     //上一首
                     prv_position = mPosition;
-                    isPlaying = true;
                     if (playMode % 3 == 1) {//1.单曲循环
                         play(mPosition);
                     } else if (playMode % 3 == 2) {//2.列表播放

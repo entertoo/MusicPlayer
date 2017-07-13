@@ -38,7 +38,13 @@ import com.example.musicplayer.view.LrcView;
 import com.example.musicplayer.view.SlidingMenu;
 import com.example.musicview.MusicPlayerView;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -160,13 +166,36 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             // 序列化歌词
             mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
             if (mFile != null) {
-                mCurrentLrc.loadLrc(mFile);
+                Log.i(TAG, "refreshMusicUI: mFile != null");
+                try {
+                    BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(new FileInputStream(mFile)));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = inputStreamReader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                    mCurrentLrc.loadLrc(sb.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } else {
-                Log.i(TAG, "refreshMusicUI: mp3Info: " + mMp3Info.toString());
                 LrcUtil.getMusicLrc(mMp3Info.getTitle(), mMp3Info.getArtist(), new Subscriber<String>() {
                     @Override
                     public void onComplete(String s) {
                         mCurrentLrc.loadLrc(s);
+                        //保存歌词到本地
+                        File file = new File(mMp3Info.getUrl().replace(".mp3", ".lrc"));
+                        FileOutputStream fileOutputStream;
+                        try {
+                            fileOutputStream = new FileOutputStream(file);
+                            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
+                            outputStreamWriter.write(s);
+                            outputStreamWriter.close();
+                            fileOutputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
                     }
 
                     @Override
@@ -263,7 +292,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             PendingIntent pending_intent_play = PendingIntent.getBroadcast(this, 5, intent_play_pause, PendingIntent.FLAG_UPDATE_CURRENT);
             remoteViews.setOnClickPendingIntent(R.id.widget_play, pending_intent_play);
         }
-        mNotificationManager.notify(100, mBuilder.build());
+        mNotificationManager.notify(Constants.NOTIFICATION_CEDE, mBuilder.build());
     }
 
     /**

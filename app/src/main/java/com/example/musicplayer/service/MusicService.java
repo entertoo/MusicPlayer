@@ -38,7 +38,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private boolean isFirst = true;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
-    private Random mRandom = new Random();
+    private Random mRandom;
     public static int prv_position;
     private Message mMessage;
     private static boolean isLoseFocus;
@@ -46,7 +46,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public void onCreate() {
-        System.out.println("service : onCreate");
         if (mPlayer == null) {
             mPlayer = new MediaPlayer();
         }
@@ -60,6 +59,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mRandom = new Random();
         super.onCreate();
     }
 
@@ -121,7 +121,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     }
 
     private void sentPreparedMessageToMain() {
-        mMessage = new Message();
+        Message mMessage = new Message();
         mMessage.what = Constants.MSG_PREPARED;
         mMessage.arg1 = mPosition;
         mMessage.obj = mPlayer.isPlaying();

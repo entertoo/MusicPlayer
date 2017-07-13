@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -8,16 +9,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <ImageView
+        <com.example.musicplayer.view.RoundImageView
             android:id="@+id/back"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_margin="10dp"
             android:scaleType="centerCrop"
-            android:background="@mipmap/ic_launcher" />
+            android:src="@mipmap/ic_launcher"
+            app:border_color="@color/colorAccent"
+            app:border_width="1dp"
+            app:type="circle" />
     </LinearLayout>
 
-    <RelativeLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -29,7 +33,7 @@
             android:layout_marginTop="20dp"
             android:paddingLeft="20dp"
             android:paddingRight="20dp"
-            android:textColor="@android:color/white"
+            android:textColor="#d7ded0d0"
             android:textSize="20sp" />
 
         <TextView
@@ -39,7 +43,7 @@
             android:layout_below="@+id/textViewSong"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="10dp"
-            android:textColor="#80FFFFFF"
+            android:textColor="#9cffffff"
             android:textSize="15sp" />
 
         <com.example.musicplayer.view.LrcView

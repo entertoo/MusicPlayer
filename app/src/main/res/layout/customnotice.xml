@@ -59,8 +59,8 @@
 
             <ImageView
                 android:id="@+id/widget_prev"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
                 android:layout_weight="1"
                 android:scaleType="centerInside"
                 android:src="@drawable/widget_prev" />
@@ -74,8 +74,8 @@
 
             <ImageView
                 android:id="@+id/widget_next"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
                 android:layout_weight="1"
                 android:scaleType="centerInside"
                 android:src="@drawable/widget_next" />
@@ -90,6 +90,6 @@
         android:layout_height="50dp"
         android:layout_margin="5dp"
         android:scaleType="centerInside"
-        android:src="@drawable/global_close" />
+        android:src="@drawable/widget_close" />
 
 </LinearLayout>

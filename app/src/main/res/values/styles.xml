@@ -13,19 +13,4 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="tab_style">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:drawablePadding">15dp</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:paddingBottom">10dp</item>
-        <item name="android:paddingLeft">20dp</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:textColor">@android:color/white</item>
-        <item name="android:textSize">24sp</item>
-        <item name="android:clickable">true</item>
-        <item name="android:onClick">clickTab</item>
-        <item name="android:background">@drawable/tab_bg</item>
-    </style>
-
 </resources>

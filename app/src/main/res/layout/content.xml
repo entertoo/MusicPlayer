@@ -6,14 +6,15 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="40dp">
+        android:layout_height="wrap_content">
 
         <ImageView
             android:id="@+id/back"
             android:layout_width="40dp"
-            android:layout_height="20dp"
+            android:layout_height="40dp"
             android:layout_margin="10dp"
-            android:background="@drawable/ic_drawer_am" />
+            android:scaleType="centerCrop"
+            android:background="@mipmap/ic_launcher" />
     </LinearLayout>
 
     <RelativeLayout xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -83,7 +84,7 @@
             android:layout_alignRight="@+id/mpv"
             android:layout_below="@+id/mpv"
             android:layout_marginTop="30dp"
-            android:background="@drawable/icon_next" />
+            android:background="@drawable/player_icon_next" />
 
         <ImageView
             android:id="@+id/previous"
@@ -92,7 +93,7 @@
             android:layout_alignLeft="@+id/mpv"
             android:layout_below="@+id/mpv"
             android:layout_marginTop="30dp"
-            android:background="@drawable/icon_previous" />
+            android:background="@drawable/player_icon_previous" />
 
     </RelativeLayout>
 

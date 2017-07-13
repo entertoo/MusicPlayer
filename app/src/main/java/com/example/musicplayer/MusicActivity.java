@@ -238,12 +238,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
             remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
             // 创建并设置通知栏中remoteViews的播放与暂停UI
-            if (mIsPlaying) {
-                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
-            } else {
-                remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
-            }
-            mNotificationManager.notify(Constants.NOTIFICATION_CEDE, mBuilder.build());
+            updateNotification();
         }
     }
 
@@ -275,9 +270,9 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
         Intent intent_play_pause;
         // 创建并设置通知栏
         if (mIsPlaying) {
-            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_pause_normal);
+            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_play);
         } else {
-            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_btn_play_normal);
+            remoteViews.setImageViewResource(R.id.widget_play, R.drawable.widget_pause);
         }
         // 设置播放
         if (mIsPlaying) {//如果正在播放——》暂停

@@ -141,9 +141,9 @@ public class MediaUtil {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredConfig = Bitmap.Config.RGB_565;
         if (small) { // 返回小图片,文件路径为默认的图片 +
-            return BitmapFactory.decodeStream(context.getResources().openRawResource(+R.drawable.pink), null, opts);
+            return BitmapFactory.decodeStream(context.getResources().openRawResource(+R.drawable.icon_default_pink), null, opts);
         }
-        return BitmapFactory.decodeStream(context.getResources().openRawResource(+R.drawable.pink), null, opts);
+        return BitmapFactory.decodeStream(context.getResources().openRawResource(+R.drawable.icon_default_pink), null, opts);
     }
 
     /**

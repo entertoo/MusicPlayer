@@ -25,6 +25,7 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.musicplayer.bean.Mp3Info;
 import com.example.musicplayer.functions.Subscriber;
@@ -233,6 +234,8 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             // 6.选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
+        }else {
+            Toast.makeText(this, "当前没有音乐，记得去下载再来。", Toast.LENGTH_LONG).show();
         }
     }
 

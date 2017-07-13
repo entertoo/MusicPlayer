@@ -24,9 +24,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
-
 public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
 
     private static final String TAG = "MusicPlayerView";
@@ -555,31 +552,8 @@ public class MusicPlayerView extends View implements OnPlayPauseToggleListener {
      * gets image URL and load it to cover image.It uses Picasso Library.
      */
     public void setCoverURL(String imageUrl) {
-        Picasso.with(getContext()).load(imageUrl).into(target);
+        //Picasso.with(getContext()).load(imageUrl).into(target);
     }
-
-    /**
-     * When picasso load into target. Overrider methods are called.
-     * Invalidate view onBitmapLoaded.
-     */
-    private Target target = new Target() {
-        @Override
-        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-            mBitmapCover = bitmap;
-            createShader();
-            postInvalidate();
-        }
-
-        @Override
-        public void onBitmapFailed(Drawable errorDrawable) {
-
-        }
-
-        @Override
-        public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-        }
-    };
 
     /**
      * This is detect when mButtonRegion is clicked. Which means

@@ -245,11 +245,14 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     if (isFirst) {
                         isFirst = false;
                         play(mPosition);
-                    } else {
-                        mPlayer.seekTo(mCurrentPosition);
+                    } else if (mPlayer != null) {
+                        //mPlayer.seekTo(mCurrentPosition);
                         mPlayer.start();
                         //通知是否在播放
                         sentPlayStateToMain();
+                    }else {
+                        onCreate();
+                        play(mPosition);
                     }
                     break;
                 case Constants.ACTION_NEXT:
@@ -321,14 +324,17 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     isLoseFocus = false;
                     mPlayer.start();
                     mPlayer.setVolume(1.0f, 1.0f);
+                    sentPlayStateToMain();
                 }
                 break;
             case AudioManager.AUDIOFOCUS_LOSS://你已经失去了音频焦点很长时间了。你必须停止所有的音频播放
                 Log.i(TAG, "onAudioFocusChange: -------------AUDIOFOCUS_LOSS---------------");
                 // Lost focus for an unbounded amount of time: stop playback and release media player
                 isLoseFocus = false;
-                if (mPlayer.isPlaying())
+                if (mPlayer.isPlaying()) {
                     mPlayer.stop();
+                    sentPlayStateToMain();
+                }
                 mPlayer.release();
                 mPlayer = null;
                 break;
@@ -340,6 +346,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 if (mPlayer.isPlaying()) {
                     isLoseFocus = true;
                     mPlayer.pause();
+                    sentPlayStateToMain();
                 }
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK://你暂时失去了音频焦点，但你可以小声地继续播放音频（低音量）而不是完全扼杀音频。
@@ -349,6 +356,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 if (mPlayer.isPlaying()) {
                     isLoseFocus = true;
                     mPlayer.setVolume(0.1f, 0.1f);
+                    sentPlayStateToMain();
                 }
                 break;
         }

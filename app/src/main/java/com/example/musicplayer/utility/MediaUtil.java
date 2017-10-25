@@ -65,8 +65,8 @@ public class MediaUtil {
             long size = cursor.getLong(mSize); // 文件大小
             String url = cursor.getString(mUrl); // 文件路径
             int isMusic = cursor.getInt(mIsMusic); // 是否为音乐
-            if (isMusic != 0 && url.matches(".*\\.mp3$")) { // 只把音乐添加到集合当中
-                Log.d("song", "id:" + id + " title: " + title + " artist:" + artist + " album:" + album + " size:" + size);
+            if (isMusic != 0 && url.matches(".*\\.mp3$") && duration > 30 * 1000 && !artist.equals("<unknown>") && !artist.equals("")) { // 只把音乐添加到集合当中
+                Log.d("song", "id:" + id + " title: " + title + " artist:" + artist + " album:" + album + " size:" + size + " duration: " + duration);
                 mp3Info.setId(id);
                 mp3Info.setTitle(title);
                 mp3Info.setArtist(artist);

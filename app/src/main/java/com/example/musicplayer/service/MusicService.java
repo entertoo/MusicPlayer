@@ -35,7 +35,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private static MediaPlayer mPlayer;
     private MusicBroadReceiver receiver;
     private int mCurrentPosition;
-    private boolean isFirst = true;
     private int mPosition;
     public static int playMode = 2;//1.单曲循环 2.列表循环 0.随机播放
     private Random mRandom;
@@ -46,14 +45,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public void onCreate() {
-        if (mPlayer == null) {
-            mPlayer = new MediaPlayer();
-        }
-        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mPlayer.setOnErrorListener(this);//资源出错
-        mPlayer.setOnPreparedListener(this);//资源准备好的时候
-        mPlayer.setOnCompletionListener(this);//播放完成的时候
+        Log.i(TAG, "onCreate: musicService");
         regFilter();
+        initPlayer();
 
         //创建audioManger
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -61,6 +55,16 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mRandom = new Random();
         super.onCreate();
+    }
+
+    private void initPlayer() {
+        if (mPlayer == null) {
+            mPlayer = new MediaPlayer();
+        }
+        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mPlayer.setOnErrorListener(this);//资源出错
+        mPlayer.setOnPreparedListener(this);//资源准备好的时候
+        mPlayer.setOnCompletionListener(this);//播放完成的时候
     }
 
     @Override
@@ -81,7 +85,15 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     @Override
     public void onDestroy() {
-        Log.i(TAG, "onDestroy: ");
+        Log.i(TAG, "onDestroy: musicService");
+        cancelMusic();
+        if (receiver != null) {
+            getApplicationContext().unregisterReceiver(receiver);
+        }
+        //stopSelf();
+    }
+
+    private void cancelMusic() {
         notificationManager.cancel(Constants.NOTIFICATION_CEDE);
         mMessage = Message.obtain();
         mMessage.what = Constants.MSG_CANCEL;
@@ -91,13 +103,10 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             e.printStackTrace();
         }
         if (mPlayer != null) {
+            mPlayer.stop();
             mPlayer.release();
             mPlayer = null;
         }
-        if (receiver != null) {
-            unregisterReceiver(receiver);
-        }
-        stopSelf();
     }
 
     @Override
@@ -217,7 +226,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         if (receiver == null) {
             receiver = new MusicBroadReceiver();
         }
-        registerReceiver(receiver, intentFilter);
+        getApplicationContext().registerReceiver(receiver, intentFilter);
     }
 
     /**
@@ -230,7 +239,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 case Constants.ACTION_LIST_ITEM:
                     Log.i(TAG, "onReceive: ACTION_LIST_ITEM");
                     //点击左侧菜单
-                    isFirst = false;
                     mPosition = intent.getIntExtra("position", 0);
                     play(mPosition);
                     break;
@@ -242,16 +250,13 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                 case Constants.ACTION_PLAY:
                     Log.i(TAG, "onReceive: ACTION_PLAY");
                     //开始播放
-                    if (isFirst) {
-                        isFirst = false;
-                        play(mPosition);
-                    } else if (mPlayer != null) {
+                    if (mPlayer != null) {
                         //mPlayer.seekTo(mCurrentPosition);
                         mPlayer.start();
                         //通知是否在播放
                         sentPlayStateToMain();
                     }else {
-                        onCreate();
+                        initPlayer();
                         play(mPosition);
                     }
                     break;
@@ -293,7 +298,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
                     break;
                 case Constants.ACTION_CLOSE:
                     Log.i(TAG, "onReceive: ACTION_CLOSE");
-                    onDestroy();
+                    cancelMusic();
                     break;
                 case AudioManager.ACTION_AUDIO_BECOMING_NOISY:
                     Log.i(TAG, "onReceive: ACTION_AUDIO_BECOMING_NOISY");

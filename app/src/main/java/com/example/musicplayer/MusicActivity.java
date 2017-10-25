@@ -1,9 +1,11 @@
 package com.example.musicplayer;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -11,7 +13,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
@@ -52,6 +57,7 @@ import java.util.List;
 public class MusicActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MusicActivity";
+    private static final int MY_PERMISSIONS_READ_EXTERNAL_STORAGE = 1;
     private MusicPlayerView mpv;
     private RelativeLayout mainView;
     private ListView mLeftView;
@@ -96,6 +102,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
                 refreshPlayStateUI(mIsPlaying);
             }
             if (msg.what == Constants.MSG_CANCEL) {
+                mIsPlaying = false;
                 finish();
             }
         }
@@ -104,9 +111,36 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initPermission();
+    }
+
+    private void init(){
         initView();
         initData();
         initEvent();
+    }
+
+    private void initPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_READ_EXTERNAL_STORAGE);
+        } else {
+            init();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == MY_PERMISSIONS_READ_EXTERNAL_STORAGE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                init();
+            } else {
+                // Permission Denied
+                Toast.makeText(MusicActivity.this, "Permission Denied, Music can't run.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @SuppressLint("InlinedApi")
@@ -234,7 +268,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             // 6.选中左侧播放中的歌曲颜色
             changeColorNormalPrv();
             changeColorSelected();
-        }else {
+        } else {
             Toast.makeText(this, "当前没有音乐，记得去下载再来。", Toast.LENGTH_LONG).show();
         }
     }

@@ -77,10 +77,6 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mBuilder;
     private Mp3Info mMp3Info;
-    private String mSongTitle;
-    private String mSingerArtist;
-    private Bitmap mBitmap;
-    private File mFile;
 
     private Handler handler = new Handler() {
         @Override
@@ -111,18 +107,25 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initView();
         initPermission();
     }
 
     private void init(){
-        initView();
         initData();
         initEvent();
     }
 
     private void initPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_READ_EXTERNAL_STORAGE);
+            // 没有权限。
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                // 用户拒绝过这个权限了，应该提示用户，为什么需要这个权限。
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_READ_EXTERNAL_STORAGE);
+            } else {
+                // 申请授权。
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_READ_EXTERNAL_STORAGE);
+            }
         } else {
             init();
         }
@@ -137,6 +140,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             } else {
                 // Permission Denied
                 Toast.makeText(MusicActivity.this, "Permission Denied, Music can't run.", Toast.LENGTH_SHORT).show();
+                finish();
             }
             return;
         }
@@ -198,18 +202,19 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             // 1.获取播放数据
             mMp3Info = mMusicList.get(position);
             // 2.设置歌曲名，歌手
-            mSongTitle = mMp3Info.getTitle();
-            mSingerArtist = mMp3Info.getArtist();
+            String mSongTitle = mMp3Info.getTitle();
+            String mSingerArtist = mMp3Info.getArtist();
             mSong.setText(mSongTitle);
             mSinger.setText(mSingerArtist);
             // 3.更新notification通知栏和播放控件UI
-            mBitmap = MediaUtil.getArtwork(MusicActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
+            Bitmap mBitmap = MediaUtil.getArtwork(MusicActivity.this, mMp3Info.getId(), mMp3Info.getAlbumId(), true, false);
             remoteViews.setImageViewBitmap(R.id.widget_album, mBitmap);
             remoteViews.setTextViewText(R.id.widget_title, mMp3Info.getTitle());
             remoteViews.setTextViewText(R.id.widget_artist, mMp3Info.getArtist());
             refreshPlayStateUI(isPlaying);
             mpv.setCoverBitmap(mBitmap);
             // 4.更换音乐背景
+            assert mBitmap != null;
             Palette.from(mBitmap).generate(new Palette.PaletteAsyncListener() {
                 @Override
                 public void onGenerated(Palette p) {
@@ -220,7 +225,7 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
                 }
             });
             // 5.设置歌词
-            mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
+            File mFile = MediaUtil.getLrcFile(mMp3Info.getUrl());
             if (mFile != null) {
                 Log.i(TAG, "switchSongUI: mFile != null");
                 try {
